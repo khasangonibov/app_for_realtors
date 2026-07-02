@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+venv/
+env/
+
+# Переменные окружения
+.env
+.env.local
+
+# IDE
+.vscode/
+.idea/
+
+# macOS
+.DS_Store
+
+# Логи
+*.log

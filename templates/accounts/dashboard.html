@@ -1,0 +1,259 @@
+{% extends "base.html" %}
+{% load humanize %}
+
+{% block title %}Дашборд{% endblock %}
+
+{% block content %}
+<div class="bg-light min-vh-100">
+
+    {# ── Навбар ──────────────────────────────────────────────────────────── #}
+    <nav class="navbar navbar-light bg-white border-bottom mb-4">
+        <div class="container-fluid px-4">
+            <span class="navbar-brand fw-bold">
+                {% if agency %}{{ agency.name }}{% else %}CRM{% endif %}
+            </span>
+            <div class="d-flex align-items-center gap-2">
+                <a href="{% url 'properties:list' %}" class="btn btn-outline-secondary btn-sm">Объекты</a>
+                <a href="{% url 'contacts:list' %}" class="btn btn-outline-secondary btn-sm">Контакты</a>
+                <a href="{% url 'deals:board' %}" class="btn btn-outline-secondary btn-sm">Сделки</a>
+                <a href="{% url 'selections:list' %}" class="btn btn-outline-secondary btn-sm">Подборки</a>
+                <a href="{% url 'tasks:list' %}" class="btn btn-outline-secondary btn-sm">Задачи</a>
+                <span class="text-muted small ms-2">
+                    {{ request.user.get_full_name|default:request.user.username }}
+                </span>
+                <form method="post" action="{% url 'accounts:logout' %}" class="d-inline">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-outline-secondary btn-sm">Выйти</button>
+                </form>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid px-4">
+
+        <h1 class="h3 mb-4">
+            Добро пожаловать, {{ request.user.first_name|default:request.user.username }}!
+        </h1>
+
+        {# ── Виджеты-счётчики ────────────────────────────────────────────── #}
+        <div class="row g-3 mb-4">
+
+            <div class="col-sm-6 col-xl-3">
+                <a href="{% url 'properties:list' %}?status=active"
+                   class="text-decoration-none">
+                    <div class="bg-white rounded border p-4 h-100">
+                        <div class="text-muted small mb-1">Активных объектов</div>
+                        <div class="h2 mb-0 text-primary">{{ stats.properties_active }}</div>
+                        {% if stats.properties_draft %}
+                        <div class="text-muted small mt-1">
+                            + {{ stats.properties_draft }} черновиков
+                        </div>
+                        {% endif %}
+                    </div>
+                </a>
+            </div>
+
+            <div class="col-sm-6 col-xl-3">
+                <a href="{% url 'contacts:list' %}?status=new"
+                   class="text-decoration-none">
+                    <div class="bg-white rounded border p-4 h-100">
+                        <div class="text-muted small mb-1">Новых контактов</div>
+                        <div class="h2 mb-0 text-success">{{ stats.contacts_new }}</div>
+                        {% if stats.contacts_in_progress %}
+                        <div class="text-muted small mt-1">
+                            {{ stats.contacts_in_progress }} в работе
+                        </div>
+                        {% endif %}
+                    </div>
+                </a>
+            </div>
+
+            <div class="col-sm-6 col-xl-3">
+                <a href="{% url 'deals:board' %}" class="text-decoration-none">
+                    <div class="bg-white rounded border p-4 h-100">
+                        <div class="text-muted small mb-1">Активных сделок</div>
+                        <div class="h2 mb-0 text-warning">{{ stats.deals_active }}</div>
+                    </div>
+                </a>
+            </div>
+
+            <div class="col-sm-6 col-xl-3">
+                <a href="{% url 'tasks:list' %}" class="text-decoration-none">
+                    <div class="bg-white rounded border p-4 h-100
+                        {% if stats.tasks_overdue %}border-danger{% endif %}">
+                        <div class="text-muted small mb-1">Задач на сегодня</div>
+                        <div class="h2 mb-0
+                            {% if stats.tasks_overdue %}text-danger{% else %}text-dark{% endif %}">
+                            {{ stats.tasks_today }}
+                        </div>
+                        {% if stats.tasks_overdue %}
+                        <div class="text-danger small mt-1">
+                            ⚠ {{ stats.tasks_overdue }} просрочено
+                        </div>
+                        {% endif %}
+                    </div>
+                </a>
+            </div>
+
+        </div>
+
+        <div class="row g-4">
+
+            {# ── Левая колонка ───────────────────────────────────────────── #}
+            <div class="col-lg-8">
+
+                {# Просроченные задачи #}
+                {% if overdue_tasks %}
+                <div class="bg-white rounded border border-danger mb-4">
+                    <div class="p-3 border-bottom border-danger d-flex justify-content-between">
+                        <h2 class="h5 mb-0 text-danger">⚠ Просроченные задачи</h2>
+                        <a href="{% url 'tasks:list' %}" class="btn btn-outline-danger btn-sm">
+                            Все задачи
+                        </a>
+                    </div>
+                    <div class="list-group list-group-flush">
+                        {% for task in overdue_tasks %}
+                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                            <div>
+                                <span class="fw-semibold">{{ task.title }}</span>
+                                {% if task.contact %}
+                                <span class="text-muted small ms-2">
+                                    {{ task.contact.full_name }}
+                                </span>
+                                {% endif %}
+                                <div class="text-danger small">
+                                    Срок: {{ task.due_date|date:"d.m.Y H:i" }}
+                                </div>
+                            </div>
+                            <div class="d-flex gap-2">
+                                <a href="{% url 'tasks:edit' task.pk %}"
+                                   class="btn btn-outline-secondary btn-sm">
+                                    Открыть
+                                </a>
+                                <form method="post" action="{% url 'tasks:done' task.pk %}">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-success btn-sm">
+                                        Выполнено
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+
+                {# Последние объекты #}
+                <div class="bg-white rounded border mb-4">
+                    <div class="p-3 border-bottom d-flex justify-content-between">
+                        <h2 class="h5 mb-0">Последние объекты</h2>
+                        <a href="{% url 'properties:list' %}"
+                           class="btn btn-outline-secondary btn-sm">
+                            Все объекты
+                        </a>
+                    </div>
+                    {% if recent_properties %}
+                    <div class="row g-0">
+                        {% for property in recent_properties %}
+                        <div class="col-md-4 border-end border-bottom">
+                            {% if property.cover_photo %}
+                            <img src="{{ property.cover_photo.image.url }}"
+                                 class="w-100"
+                                 style="height: 120px; object-fit: cover;"
+                                 alt="">
+                            {% else %}
+                            <div class="bg-secondary-subtle d-flex align-items-center justify-content-center"
+                                 style="height: 120px;">
+                                <span class="text-muted small">Нет фото</span>
+                            </div>
+                            {% endif %}
+                            <div class="p-2">
+                                <div class="small fw-semibold">
+                                    {{ property.get_property_type_display }}
+                                    {% if property.area_total %}{{ property.area_total }} м²{% endif %}
+                                </div>
+                                <div class="text-muted small">{{ property.city }}</div>
+                                <div class="text-primary small fw-bold">
+                                    {{ property.price|intcomma }} ₽
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4 text-muted small">
+                        Объектов пока нет.
+                        <a href="{% url 'properties:create' %}">Добавить первый</a>
+                    </div>
+                    {% endif %}
+                </div>
+
+            </div>
+
+            {# ── Правая колонка ──────────────────────────────────────────── #}
+            <div class="col-lg-4">
+
+                {# Последние контакты #}
+                <div class="bg-white rounded border mb-4">
+                    <div class="p-3 border-bottom d-flex justify-content-between">
+                        <h2 class="h5 mb-0">Последние контакты</h2>
+                        <a href="{% url 'contacts:list' %}"
+                           class="btn btn-outline-secondary btn-sm">
+                            Все
+                        </a>
+                    </div>
+                    {% if recent_contacts %}
+                    <div class="list-group list-group-flush">
+                        {% for contact in recent_contacts %}
+                        <a href="{% url 'contacts:detail' contact.pk %}"
+                           class="list-group-item list-group-item-action py-3">
+                            <div class="d-flex justify-content-between">
+                                <span class="fw-semibold">{{ contact.full_name }}</span>
+                                <span class="badge
+                                    {% if contact.status == 'new' %}bg-primary
+                                    {% elif contact.status == 'in_progress' %}bg-warning text-dark
+                                    {% else %}bg-secondary{% endif %}">
+                                    {{ contact.get_status_display }}
+                                </span>
+                            </div>
+                            <div class="text-muted small mt-1">
+                                {{ contact.phone }} · {{ contact.get_contact_type_display }}
+                            </div>
+                        </a>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4 text-muted small">
+                        Контактов пока нет.
+                        <a href="{% url 'contacts:create' %}">Добавить первый</a>
+                    </div>
+                    {% endif %}
+                </div>
+
+                {# Быстрые действия #}
+                <div class="bg-white rounded border p-4">
+                    <h2 class="h5 mb-3">Быстрые действия</h2>
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'properties:create' %}" class="btn btn-outline-primary btn-sm">
+                            + Добавить объект
+                        </a>
+                        <a href="{% url 'contacts:create' %}" class="btn btn-outline-success btn-sm">
+                            + Добавить контакт
+                        </a>
+                        <a href="{% url 'deals:create' %}" class="btn btn-outline-warning btn-sm">
+                            + Новая сделка
+                        </a>
+                        <a href="{% url 'selections:create' %}" class="btn btn-outline-info btn-sm">
+                            + Новая подборка
+                        </a>
+                        <a href="{% url 'tasks:create' %}" class="btn btn-outline-secondary btn-sm">
+                            + Новая задача
+                        </a>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

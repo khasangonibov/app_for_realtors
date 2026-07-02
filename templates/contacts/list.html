@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+{% load humanize %}
+
+{% block title %}Контакты{% endblock %}
+
+{% block content %}
+<div class="bg-light min-vh-100">
+
+    <nav class="navbar navbar-light bg-white border-bottom mb-4">
+        <div class="container-fluid px-4">
+            <span class="navbar-brand">
+                {% if agency %}{{ agency.name }}{% else %}CRM{% endif %}
+            </span>
+            <div class="d-flex align-items-center gap-3">
+                <a href="{% url 'properties:list' %}" class="btn btn-outline-secondary btn-sm">Объекты</a>
+                <span class="text-muted small">{{ request.user.get_full_name|default:request.user.username }}</span>
+                <form method="post" action="{% url 'accounts:logout' %}" class="d-inline">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-outline-secondary btn-sm">Выйти</button>
+                </form>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid px-4">
+
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h1 class="h3 mb-0">Контакты</h1>
+                <span class="text-muted small">Найдено: {{ total_count }}</span>
+            </div>
+            <a href="{% url 'contacts:create' %}" class="btn btn-primary">
+                + Добавить контакт
+            </a>
+        </div>
+
+        {# Фильтры #}
+        <div class="bg-white rounded p-3 mb-4 border">
+            <form method="get" class="row g-2 align-items-end">
+                <div class="col-md-4">
+                    <label class="form-label small">Поиск</label>
+                    <input type="text" name="search" value="{{ search }}"
+                           class="form-control form-control-sm"
+                           placeholder="Имя, телефон, email...">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label small">Статус</label>
+                    <select name="status" class="form-select form-select-sm">
+                        <option value="">Все статусы</option>
+                        {% for value, label in status_choices %}
+                        <option value="{{ value }}" {% if current_status == value %}selected{% endif %}>
+                            {{ label }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label small">Тип</label>
+                    <select name="contact_type" class="form-select form-select-sm">
+                        <option value="">Все типы</option>
+                        {% for value, label in type_choices %}
+                        <option value="{{ value }}" {% if current_type == value %}selected{% endif %}>
+                            {{ label }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2 d-flex gap-2">
+                    <button type="submit" class="btn btn-primary btn-sm w-100">Найти</button>
+                    <a href="{% url 'contacts:list' %}" class="btn btn-outline-secondary btn-sm w-100">Сброс</a>
+                </div>
+            </form>
+        </div>
+
+        {# Список #}
+        {% if contacts %}
+        <div class="bg-white rounded border overflow-hidden">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Имя</th>
+                        <th>Телефон</th>
+                        <th>Тип</th>
+                        <th>Статус</th>
+                        <th>Источник</th>
+                        <th>Риелтор</th>
+                        <th>Добавлен</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for contact in contacts %}
+                    <tr>
+                        <td>
+                            <a href="{% url 'contacts:detail' contact.pk %}"
+                               class="fw-semibold text-decoration-none">
+                                {{ contact.full_name }}
+                            </a>
+                        </td>
+                        <td>
+                            <a href="tel:{{ contact.phone }}" class="text-decoration-none">
+                                {{ contact.phone }}
+                            </a>
+                        </td>
+                        <td>{{ contact.get_contact_type_display }}</td>
+                        <td>
+                            <span class="badge
+                                {% if contact.status == 'new' %}bg-primary
+                                {% elif contact.status == 'in_progress' %}bg-warning text-dark
+                                {% elif contact.status == 'done' %}bg-success
+                                {% else %}bg-secondary{% endif %}">
+                                {{ contact.get_status_display }}
+                            </span>
+                        </td>
+                        <td class="text-muted small">{{ contact.get_source_display }}</td>
+                        <td class="text-muted small">
+                            {{ contact.agent.get_full_name|default:contact.agent.username|default:"—" }}
+                        </td>
+                        <td class="text-muted small">{{ contact.created_at|date:"d.m.Y" }}</td>
+                        <td>
+                            <a href="{% url 'contacts:edit' contact.pk %}"
+                               class="btn btn-outline-secondary btn-sm">
+                                Изменить
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {% else %}
+        <div class="text-center py-5">
+            <p class="text-muted">Контактов не найдено.</p>
+            {% if search or current_status or current_type %}
+            <a href="{% url 'contacts:list' %}" class="btn btn-outline-secondary btn-sm">
+                Сбросить фильтры
+            </a>
+            {% endif %}
+        </div>
+        {% endif %}
+
+    </div>
+</div>
+{% endblock %}

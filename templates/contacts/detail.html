@@ -1,0 +1,187 @@
+{% extends "base.html" %}
+{% load humanize %}
+
+{% block title %}{{ contact.full_name }}{% endblock %}
+
+{% block content %}
+<div class="bg-light min-vh-100">
+
+    <nav class="navbar navbar-light bg-white border-bottom mb-4">
+        <div class="container-fluid px-4">
+            <span class="navbar-brand">
+                {% if agency %}{{ agency.name }}{% else %}CRM{% endif %}
+            </span>
+            <div class="d-flex align-items-center gap-3">
+                <a href="{% url 'contacts:list' %}" class="btn btn-outline-secondary btn-sm">
+                    ← Контакты
+                </a>
+                <a href="{% url 'contacts:edit' contact.pk %}" class="btn btn-primary btn-sm">
+                    Редактировать
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container pb-5">
+        <div class="row g-4">
+
+            {# ── Левая колонка — данные контакта ──────────────────────── #}
+            <div class="col-lg-4">
+                <div class="bg-white rounded p-4 border mb-4">
+
+                    {# Имя и статус #}
+                    <h1 class="h4 mb-1">{{ contact.full_name }}</h1>
+                    <span class="badge mb-3
+                        {% if contact.status == 'new' %}bg-primary
+                        {% elif contact.status == 'in_progress' %}bg-warning text-dark
+                        {% elif contact.status == 'done' %}bg-success
+                        {% else %}bg-secondary{% endif %}">
+                        {{ contact.get_status_display }}
+                    </span>
+
+                    <hr>
+
+                    {# Контактные данные #}
+                    <div class="mb-3">
+                        <div class="text-muted small mb-1">Телефон</div>
+                        <a href="tel:{{ contact.phone }}" class="fw-semibold text-decoration-none">
+                            {{ contact.phone }}
+                        </a>
+                        <a href="https://wa.me/{{ contact.phone|cut:'+'|cut:' '|cut:'-' }}"
+                           class="btn btn-outline-success btn-sm ms-2">
+                            WA
+                        </a>
+                    </div>
+
+                    {% if contact.email %}
+                    <div class="mb-3">
+                        <div class="text-muted small mb-1">Email</div>
+                        <a href="mailto:{{ contact.email }}" class="text-decoration-none">
+                            {{ contact.email }}
+                        </a>
+                    </div>
+                    {% endif %}
+
+                    <hr>
+
+                    <div class="row g-2 small">
+                        <div class="col-6">
+                            <div class="text-muted">Тип</div>
+                            <div>{{ contact.get_contact_type_display }}</div>
+                        </div>
+                        <div class="col-6">
+                            <div class="text-muted">Источник</div>
+                            <div>{{ contact.get_source_display }}</div>
+                        </div>
+                        {% if contact.budget_min or contact.budget_max %}
+                        <div class="col-12 mt-2">
+                            <div class="text-muted">Бюджет</div>
+                            <div>
+                                {% if contact.budget_min %}от {{ contact.budget_min|intcomma }} ₽{% endif %}
+                                {% if contact.budget_max %}до {{ contact.budget_max|intcomma }} ₽{% endif %}
+                            </div>
+                        </div>
+                        {% endif %}
+                        <div class="col-6 mt-2">
+                            <div class="text-muted">Риелтор</div>
+                            <div>{{ contact.agent.get_full_name|default:"—" }}</div>
+                        </div>
+                        <div class="col-6 mt-2">
+                            <div class="text-muted">Добавлен</div>
+                            <div>{{ contact.created_at|date:"d.m.Y" }}</div>
+                        </div>
+                    </div>
+
+                    {% if contact.notes %}
+                    <hr>
+                    <div class="text-muted small mb-1">Заметки</div>
+                    <p class="small mb-0" style="white-space: pre-line;">{{ contact.notes }}</p>
+                    {% endif %}
+
+                </div>
+            </div>
+
+            {# ── Правая колонка — история активностей ─────────────────── #}
+            <div class="col-lg-8">
+
+                {# Форма добавления активности #}
+                <div class="bg-white rounded p-4 border mb-4">
+                    <h2 class="h5 mb-3">Добавить активность</h2>
+
+                    {% for message in messages %}
+                    <div class="alert alert-success alert-dismissible fade show py-2">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                    {% endfor %}
+
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label class="form-label small">{{ activity_form.activity_type.label }}</label>
+                                {{ activity_form.activity_type }}
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label small">{{ activity_form.scheduled_at.label }}</label>
+                                {{ activity_form.scheduled_at }}
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label small">{{ activity_form.description.label }}</label>
+                                {{ activity_form.description }}
+                            </div>
+                            <div class="col-12">
+                                <button type="submit" class="btn btn-primary btn-sm">
+                                    Добавить
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+
+                {# Лента активностей #}
+                <div class="bg-white rounded border overflow-hidden">
+                    <div class="p-3 border-bottom">
+                        <h2 class="h5 mb-0">История</h2>
+                    </div>
+
+                    {% if activities %}
+                    <div class="list-group list-group-flush">
+                        {% for activity in activities %}
+                        <div class="list-group-item py-3">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <span class="badge bg-secondary me-2">
+                                        {{ activity.get_activity_type_display }}
+                                    </span>
+                                    {% if activity.scheduled_at %}
+                                    <span class="text-muted small">
+                                        {{ activity.scheduled_at|date:"d.m.Y H:i" }}
+                                    </span>
+                                    {% endif %}
+                                </div>
+                                <span class="text-muted small">
+                                    {{ activity.created_at|date:"d.m.Y H:i" }}
+                                </span>
+                            </div>
+                            <p class="mb-0 mt-2 small">{{ activity.description }}</p>
+                            {% if activity.agent %}
+                            <div class="text-muted small mt-1">
+                                {{ activity.agent.get_full_name|default:activity.agent.username }}
+                            </div>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4 text-muted small">
+                        Активностей пока нет — добавьте первую запись выше.
+                    </div>
+                    {% endif %}
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

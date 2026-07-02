@@ -1,0 +1,160 @@
+{% extends "base.html" %}
+{% load humanize %}
+
+{% block title %}{{ selection.title }}{% endblock %}
+
+{% block content %}
+<div class="bg-light min-vh-100">
+
+    <nav class="navbar navbar-light bg-white border-bottom mb-4">
+        <div class="container-fluid px-4">
+            <span class="navbar-brand">
+                {% if agency %}{{ agency.name }}{% else %}CRM{% endif %}
+            </span>
+            <div class="d-flex align-items-center gap-3">
+                <a href="{% url 'selections:list' %}" class="btn btn-outline-secondary btn-sm">
+                    ← Подборки
+                </a>
+                <button class="btn btn-outline-primary btn-sm"
+                        onclick="copyLink('{{ request.scheme }}://{{ request.get_host }}{{ selection.get_public_url }}')">
+                    Скопировать ссылку для клиента
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container pb-5">
+
+        <h1 class="h3 mb-1">{{ selection.title }}</h1>
+        {% if selection.contact %}
+        <p class="text-muted mb-4">Клиент: {{ selection.contact.full_name }}</p>
+        {% else %}
+        <p class="text-muted mb-4">Без привязки к клиенту</p>
+        {% endif %}
+
+        {% for message in messages %}
+        <div class="alert alert-success alert-dismissible fade show">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        {% endfor %}
+
+        <div class="row g-4">
+
+            {# ── Объекты в подборке ──────────────────────────────────────── #}
+            <div class="col-lg-8">
+                <h2 class="h5 mb-3">Объекты в подборке ({{ items|length }})</h2>
+
+                {% if items %}
+                {% for item in items %}
+                <div class="bg-white rounded border mb-3 overflow-hidden">
+                    <div class="row g-0">
+
+                        {# Фото #}
+                        {% if item.property.cover_photo %}
+                        <div class="col-md-3">
+                            <img src="{{ item.property.cover_photo.image.url }}"
+                                 class="img-fluid h-100"
+                                 style="object-fit: cover; max-height: 150px; width: 100%;"
+                                 alt="">
+                        </div>
+                        {% endif %}
+
+                        <div class="col">
+                            <div class="p-3">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <p class="fw-semibold mb-1">
+                                            {{ item.property.get_property_type_display }}
+                                            {% if item.property.area_total %}
+                                                {{ item.property.area_total }} м²
+                                            {% endif %}
+                                        </p>
+                                        <p class="text-muted small mb-1">
+                                            {{ item.property.city }}{% if item.property.street %}, {{ item.property.street }}{% endif %}
+                                        </p>
+                                        <p class="fw-bold text-primary mb-2">
+                                            {{ item.property.price|intcomma }} ₽
+                                        </p>
+                                    </div>
+
+                                    {# Реакция клиента #}
+                                    <span class="badge
+                                        {% if item.client_status == 'liked' %}bg-success
+                                        {% elif item.client_status == 'rejected' %}bg-danger
+                                        {% elif item.client_status == 'maybe' %}bg-warning text-dark
+                                        {% else %}bg-light text-dark border{% endif %}">
+                                        {{ item.get_client_status_display }}
+                                    </span>
+                                </div>
+
+                                {% if item.agent_comment %}
+                                <p class="text-muted small mb-2">
+                                    💬 {{ item.agent_comment }}
+                                </p>
+                                {% endif %}
+
+                                {# Удалить объект из подборки #}
+                                <form method="post"
+                                      action="{% url 'selections:item_delete' selection.pk item.pk %}"
+                                      class="d-inline">
+                                    {% csrf_token %}
+                                    <button type="submit"
+                                            class="btn btn-outline-danger btn-sm"
+                                            onclick="return confirm('Удалить объект из подборки?')">
+                                        Удалить
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+
+                {% else %}
+                <div class="bg-white rounded border text-center py-5 text-muted">
+                    Объекты ещё не добавлены. Используйте форму справа.
+                </div>
+                {% endif %}
+            </div>
+
+            {# ── Форма добавления объекта ────────────────────────────────── #}
+            <div class="col-lg-4">
+                <div class="bg-white rounded border p-4 position-sticky" style="top: 20px;">
+                    <h2 class="h6 mb-3">Добавить объект</h2>
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label class="form-label small">{{ item_form.property.label }}</label>
+                            {{ item_form.property }}
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label small">{{ item_form.agent_comment.label }}</label>
+                            {{ item_form.agent_comment }}
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100">
+                            Добавить в подборку
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function copyLink(url) {
+        navigator.clipboard.writeText(url).then(() => {
+            const toast = document.createElement('div');
+            toast.className = 'position-fixed bottom-0 end-0 m-3 alert alert-success shadow';
+            toast.style.zIndex = '9999';
+            toast.textContent = 'Ссылка скопирована!';
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 2000);
+        });
+    }
+</script>
+{% endblock %}

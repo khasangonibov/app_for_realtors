@@ -1,0 +1,146 @@
+{% extends "base.html" %}
+{% load humanize %}
+
+{% block title %}Задачи{% endblock %}
+
+{% block content %}
+<div class="bg-light min-vh-100">
+
+    <nav class="navbar navbar-light bg-white border-bottom mb-4">
+        <div class="container-fluid px-4">
+            <span class="navbar-brand">
+                {% if agency %}{{ agency.name }}{% else %}CRM{% endif %}
+            </span>
+            <div class="d-flex align-items-center gap-3">
+                <a href="{% url 'properties:list' %}" class="btn btn-outline-secondary btn-sm">Объекты</a>
+                <a href="{% url 'contacts:list' %}" class="btn btn-outline-secondary btn-sm">Контакты</a>
+                <a href="{% url 'deals:board' %}" class="btn btn-outline-secondary btn-sm">Сделки</a>
+                <form method="post" action="{% url 'accounts:logout' %}" class="d-inline">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-outline-secondary btn-sm">Выйти</button>
+                </form>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid px-4">
+
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1 class="h3 mb-0">Задачи</h1>
+            <a href="{% url 'tasks:create' %}" class="btn btn-primary">
+                + Новая задача
+            </a>
+        </div>
+
+        {# ── Просроченные задачи ─────────────────────────────────────────── #}
+        {% if overdue %}
+        <div class="mb-4">
+            <h2 class="h5 text-danger mb-3">
+                ⚠ Просроченные ({{ overdue|length }})
+            </h2>
+            {% for task in overdue %}
+            <div class="bg-white rounded border border-danger mb-2 p-3 d-flex justify-content-between align-items-center">
+                <div>
+                    <span class="fw-semibold">{{ task.title }}</span>
+                    <span class="badge ms-2
+                        {% if task.priority == 'high' %}bg-danger
+                        {% elif task.priority == 'normal' %}bg-warning text-dark
+                        {% else %}bg-secondary{% endif %}">
+                        {{ task.get_priority_display }}
+                    </span>
+                    <div class="text-muted small mt-1">
+                        {{ task.get_task_type_display }}
+                        {% if task.contact %} · {{ task.contact.full_name }}{% endif %}
+                        {% if task.related_property %} · {{ task.related_property.city }}{% endif %}
+                    </div>
+                    <div class="text-danger small">
+                        Срок: {{ task.due_date|date:"d.m.Y H:i" }}
+                    </div>
+                </div>
+                <div class="d-flex gap-2">
+                    <a href="{% url 'tasks:edit' task.pk %}"
+                       class="btn btn-outline-secondary btn-sm">
+                        Изменить
+                    </a>
+                    <form method="post" action="{% url 'tasks:done' task.pk %}">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-success btn-sm">
+                            Выполнено
+                        </button>
+                    </form>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        {# ── Активные задачи ─────────────────────────────────────────────── #}
+        <div class="mb-4">
+            <h2 class="h5 mb-3">Активные ({{ active|length }})</h2>
+            {% if active %}
+            {% for task in active %}
+            <div class="bg-white rounded border mb-2 p-3 d-flex justify-content-between align-items-center">
+                <div>
+                    <span class="fw-semibold">{{ task.title }}</span>
+                    <span class="badge ms-2
+                        {% if task.priority == 'high' %}bg-danger
+                        {% elif task.priority == 'normal' %}bg-warning text-dark
+                        {% else %}bg-secondary{% endif %}">
+                        {{ task.get_priority_display }}
+                    </span>
+                    <div class="text-muted small mt-1">
+                        {{ task.get_task_type_display }}
+                        {% if task.contact %} · {{ task.contact.full_name }}{% endif %}
+                        {% if task.related_property %} · {{ task.related_property.city }}{% endif %}
+                    </div>
+                    <div class="text-muted small">
+                        Срок: {{ task.due_date|date:"d.m.Y H:i" }}
+                    </div>
+                </div>
+                <div class="d-flex gap-2">
+                    <a href="{% url 'tasks:edit' task.pk %}"
+                       class="btn btn-outline-secondary btn-sm">
+                        Изменить
+                    </a>
+                    <form method="post" action="{% url 'tasks:done' task.pk %}">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-success btn-sm">
+                            Выполнено
+                        </button>
+                    </form>
+                </div>
+            </div>
+            {% endfor %}
+            {% else %}
+            <div class="bg-white rounded border text-center py-4 text-muted">
+                Активных задач нет.
+            </div>
+            {% endif %}
+        </div>
+
+        {# ── Выполненные задачи (последние 20) ───────────────────────────── #}
+        {% if done %}
+        <div class="mb-4">
+            <h2 class="h5 text-muted mb-3">Выполненные (последние 20)</h2>
+            {% for task in done %}
+            <div class="bg-white rounded border mb-2 p-3 d-flex justify-content-between align-items-center opacity-75">
+                <div>
+                    <span class="text-decoration-line-through text-muted">
+                        {{ task.title }}
+                    </span>
+                    <div class="text-muted small mt-1">
+                        Выполнена: {{ task.done_at|date:"d.m.Y H:i"|default:"—" }}
+                    </div>
+                </div>
+                <a href="{% url 'tasks:edit' task.pk %}"
+                   class="btn btn-outline-secondary btn-sm">
+                    Открыть
+                </a>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+    </div>
+</div>
+{% endblock %}

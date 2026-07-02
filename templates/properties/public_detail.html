@@ -1,0 +1,224 @@
+{% extends "base.html" %}
+{% load static humanize %}
+
+{% block title %}{{ property.get_deal_type_display }} | {{ property.get_property_type_display }}{% if property.area_total %} | {{ property.area_total }} м²{% endif %} | {{ property.city }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'vendor/leaflet/leaflet.css' %}">
+
+<meta name="description" content="{{ property.city }}, {{ property.street }} — {{ property.get_property_type_display }}, {{ property.area_total|default:'' }} м², {{ property.price|intcomma }} ₽">
+<meta property="og:title" content="{{ property.get_deal_type_display }} | {{ property.get_property_type_display }} | {{ property.price|intcomma }} ₽">
+<meta property="og:description" content="{{ property.city }}, {{ property.street }}{% if property.building %}, {{ property.building }}{% endif %}">
+{% if property.cover_photo %}
+<meta property="og:image" content="{{ request.scheme }}://{{ request.get_host }}{{ property.cover_photo.image.url }}">
+{% endif %}
+<meta name="referrer" content="no-referrer">
+{% endblock %}
+
+{% block content %}
+<div class="bg-light min-vh-100">
+
+    {# ── Шапка ──────────────────────────────────────────────────────────── #}
+    <nav class="navbar navbar-light bg-white border-bottom mb-4">
+        <div class="container">
+            <span class="navbar-brand">{{ property.agency.name }}</span>
+        </div>
+    </nav>
+
+    <div class="container pb-5">
+        <div class="row g-4">
+
+            {# ── Левая колонка ───────────────────────────────────────────── #}
+            <div class="col-lg-8">
+
+                {# Галерея фото #}
+                <div id="propertyGallery" class="carousel slide rounded overflow-hidden mb-4 bg-white" data-bs-ride="false">
+                    {% if photos %}
+                        <div class="carousel-inner">
+                            {% for photo in photos %}
+                            <div class="carousel-item {% if forloop.first %}active{% endif %}">
+                                <img src="{{ photo.image.url }}"
+                                     class="d-block w-100"
+                                     style="height: 480px; object-fit: cover;"
+                                     alt="Фото объекта">
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% if photos|length > 1 %}
+                        <button class="carousel-control-prev" type="button" data-bs-target="#propertyGallery" data-bs-slide="prev">
+                            <span class="carousel-control-prev-icon"></span>
+                        </button>
+                        <button class="carousel-control-next" type="button" data-bs-target="#propertyGallery" data-bs-slide="next">
+                            <span class="carousel-control-next-icon"></span>
+                        </button>
+                        {% endif %}
+                    {% else %}
+                        <div class="d-flex align-items-center justify-content-center bg-secondary-subtle" style="height: 480px;">
+                            <span class="text-muted">Фото отсутствуют</span>
+                        </div>
+                    {% endif %}
+                </div>
+
+                {# Заголовок и цена #}
+                <div class="bg-white rounded p-4 mb-4">
+                    <h1 class="h3 mb-2">
+                        {{ property.get_deal_type_display }} {{ property.get_property_type_display|lower }}{% if property.area_total %}, {{ property.area_total }} м²{% endif %}{% if property.floor and property.floors_total %}, {{ property.floor }}/{{ property.floors_total }} этаж{% endif %}
+                    </h1>
+                    <p class="text-muted mb-3">
+                        {{ property.city }}{% if property.district %}, {{ property.district }}{% endif %}{% if property.street %}, {{ property.street }}{% endif %}{% if property.building %}, {{ property.building }}{% endif %}
+                    </p>
+                    <div class="d-flex align-items-baseline gap-3">
+                        <span class="h2 mb-0 text-primary">{{ property.price|intcomma }} ₽</span>
+                        {% if property.price_per_sqm %}
+                        <span class="text-muted">{{ property.price_per_sqm|intcomma }} ₽/м²</span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                {# Характеристики #}
+                {% if features %}
+                <div class="bg-white rounded p-4 mb-4">
+                    <h2 class="h5 mb-3">Характеристики</h2>
+                    <div class="row">
+                        {% for feature in features %}
+                        <div class="col-md-6 d-flex justify-content-between border-bottom py-2">
+                            <span class="text-muted">{{ feature.key }}</span>
+                            <span>{{ feature.value }}</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+
+                {# Описание #}
+                {% if property.description %}
+                <div class="bg-white rounded p-4 mb-4">
+                    <h2 class="h5 mb-3">Описание</h2>
+                    <p class="mb-0" style="white-space: pre-line;">{{ property.description }}</p>
+                </div>
+                {% endif %}
+
+                {# Карта #}
+                {% if property.latitude and property.longitude %}
+                <div class="bg-white rounded p-4 mb-4">
+                    <h2 class="h5 mb-3">Расположение на карте</h2>
+                    <div id="propertyMap" style="height: 350px; border-radius: 8px;"></div>
+                </div>
+                {% endif %}
+
+            </div>
+
+            {# ── Правая колонка: контакт агента ─────────────────────────── #}
+            <div class="col-lg-4">
+                <div class="bg-white rounded p-4 position-sticky" style="top: 20px;">
+                    <h2 class="h6 text-muted mb-3">Контактное лицо</h2>
+
+                    {% if property.agent %}
+                        <div class="d-flex align-items-center mb-3">
+                            {% if property.agent.avatar %}
+                                <img src="{{ property.agent.avatar.url }}"
+                                     class="rounded-circle me-3"
+                                     width="56" height="56"
+                                     style="object-fit: cover;"
+                                     alt="">
+                            {% else %}
+                                <div class="rounded-circle bg-secondary-subtle d-flex align-items-center justify-content-center me-3"
+                                     style="width: 56px; height: 56px; font-size: 1.5rem;">
+                                    {{ property.agent.first_name|first|default:"А" }}
+                                </div>
+                            {% endif %}
+                            <div>
+                                <div class="fw-semibold">{{ property.agent.get_full_name|default:property.agent.username }}</div>
+                                <div class="text-muted small">Риелтор</div>
+                            </div>
+                        </div>
+
+                        {% if property.agent.phone %}
+                        <a href="tel:{{ property.agent.phone }}"
+                           class="btn btn-primary w-100 mb-2">
+                            Позвонить: {{ property.agent.phone }}
+                        </a>
+                        <a href="https://wa.me/{{ property.agent.phone|cut:'+'|cut:' '|cut:'-' }}"
+                           class="btn btn-outline-success w-100 mb-3">
+                            Написать в WhatsApp
+                        </a>
+                        {% endif %}
+                    {% else %}
+                        <p class="text-muted">Контакт уточняется</p>
+                    {% endif %}
+
+                    {% if property.is_exclusive %}
+                    <div class="alert alert-warning py-2 small">
+                        Эксклюзивный объект агентства
+                    </div>
+                    {% endif %}
+
+                    {# Кнопка поделиться #}
+                    <button class="btn btn-outline-primary w-100" onclick="shareProperty()">
+                        Поделиться ссылкой
+                    </button>
+                    <div id="shareSuccess"
+                         class="text-success small mt-2 text-center"
+                         style="display: none;">
+                        Ссылка скопирована!
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'vendor/leaflet/leaflet.js' %}"></script>
+
+{% if property.latitude and property.longitude %}
+<script>
+    (function () {
+        // stringformat:"f" гарантирует точку как разделитель
+        // независимо от локали Django (ru-ru использует запятую)
+        const lat = {{ property.latitude|stringformat:"f" }};
+        const lng = {{ property.longitude|stringformat:"f" }};
+
+        if (!lat || !lng) return;
+
+        const propertyMap = L.map('propertyMap').setView([lat, lng], 16);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors',
+            maxZoom: 19,
+        }).addTo(propertyMap);
+
+        const customIcon = L.icon({
+            iconUrl: "{% static 'vendor/leaflet/images/marker-icon.png' %}",
+            iconRetinaUrl: "{% static 'vendor/leaflet/images/marker-icon-2x.png' %}",
+            shadowUrl: "{% static 'vendor/leaflet/images/marker-shadow.png' %}",
+            iconSize: [25, 41],
+            iconAnchor: [12, 41],
+        });
+
+        L.marker([lat, lng], { icon: customIcon }).addTo(propertyMap);
+    })();
+</script>
+{% endif %}
+
+<script>
+    function shareProperty() {
+        const url = window.location.href;
+        const title = document.title;
+
+        if (navigator.share) {
+            // Мобильные устройства — открывает системное меню шаринга
+            navigator.share({ title: title, url: url });
+        } else {
+            // Десктоп — копирует ссылку в буфер обмена
+            navigator.clipboard.writeText(url).then(() => {
+                const successEl = document.getElementById('shareSuccess');
+                successEl.style.display = 'block';
+                setTimeout(() => { successEl.style.display = 'none'; }, 2000);
+            });
+        }
+    }
+</script>
+{% endblock %}

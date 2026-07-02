@@ -1,0 +1,202 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="bg-light min-vh-100">
+
+    {# ── Навбар ──────────────────────────────────────────────────────────── #}
+    <nav class="navbar navbar-light bg-white border-bottom mb-4">
+        <div class="container-fluid px-4">
+            <span class="navbar-brand">
+                {% if agency %}{{ agency.name }}{% else %}CRM{% endif %}
+            </span>
+            <div class="d-flex align-items-center gap-3">
+                <a href="{% url 'properties:list' %}" class="btn btn-outline-secondary btn-sm">
+                    ← Назад к списку
+                </a>
+                <form method="post" action="{% url 'accounts:logout' %}" class="d-inline">
+                    {% csrf_token %}
+                    {# Общие ошибки формы #}
+                    {% if form.errors %}
+                    <div class="alert alert-danger mb-4">
+                        <strong>Пожалуйста, исправьте ошибки:</strong>
+                        <ul class="mb-0 mt-2">
+                            {% for field in form %}
+                                {% for error in field.errors %}
+                                <li><strong>{{ field.label }}:</strong> {{ error }}</li>
+                                {% endfor %}
+                            {% endfor %}
+                            {% for error in form.non_field_errors %}
+                            <li>{{ error }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    {% endif %}
+                    <button type="submit" class="btn btn-outline-secondary btn-sm">Выйти</button>
+                </form>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container pb-5">
+
+        <h1 class="h3 mb-4">{{ title }}</h1>
+
+        {# Сообщения об успехе/ошибке #}
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        {% endfor %}
+
+        <form method="post" novalidate>
+            {% csrf_token %}
+
+            {# ── Тип сделки и объекта ────────────────────────────────────── #}
+            <div class="bg-white rounded p-4 mb-4 border">
+                <h2 class="h5 mb-3">Основное</h2>
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label class="form-label">{{ form.deal_type.label }}</label>
+                        {{ form.deal_type }}
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">{{ form.property_type.label }}</label>
+                        {{ form.property_type }}
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">{{ form.status.label }}</label>
+                        {{ form.status }}
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">{{ form.title.label }}</label>
+                        {{ form.title }}
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">{{ form.description.label }}</label>
+                        {{ form.description }}
+                    </div>
+                </div>
+            </div>
+
+            {# ── Цена и комиссия ─────────────────────────────────────────── #}
+            <div class="bg-white rounded p-4 mb-4 border">
+                <h2 class="h5 mb-3">Цена и комиссия</h2>
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label class="form-label">{{ form.price.label }}</label>
+                        {{ form.price }}
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">{{ form.commission_percent.label }}</label>
+                        {{ form.commission_percent }}
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">{{ form.commission_fixed.label }}</label>
+                        {{ form.commission_fixed }}
+                    </div>
+                </div>
+            </div>
+
+            {# ── Площади и этажность ─────────────────────────────────────── #}
+            <div class="bg-white rounded p-4 mb-4 border">
+                <h2 class="h5 mb-3">Площади и этажность</h2>
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <label class="form-label">{{ form.area_total.label }}</label>
+                        {{ form.area_total }}
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">{{ form.area_living.label }}</label>
+                        {{ form.area_living }}
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">{{ form.area_kitchen.label }}</label>
+                        {{ form.area_kitchen }}
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">{{ form.rooms_count.label }}</label>
+                        {{ form.rooms_count }}
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">{{ form.floor.label }}</label>
+                        {{ form.floor }}
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">{{ form.floors_total.label }}</label>
+                        {{ form.floors_total }}
+                    </div>
+                </div>
+            </div>
+
+            {# ── Адрес ───────────────────────────────────────────────────── #}
+            <div class="bg-white rounded p-4 mb-4 border">
+                <h2 class="h5 mb-3">Адрес</h2>
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label class="form-label">{{ form.city.label }}</label>
+                        {{ form.city }}
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">{{ form.district.label }}</label>
+                        {{ form.district }}
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">{{ form.street.label }}</label>
+                        {{ form.street }}
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">{{ form.building.label }}</label>
+                        {{ form.building }}
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">{{ form.apartment.label }}</label>
+                        {{ form.apartment }}
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">{{ form.latitude.label }}</label>
+                        {{ form.latitude }}
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">{{ form.longitude.label }}</label>
+                        {{ form.longitude }}
+                    </div>
+                </div>
+            </div>
+
+            {# ── Публикация ──────────────────────────────────────────────── #}
+            <div class="bg-white rounded p-4 mb-4 border">
+                <h2 class="h5 mb-3">Публикация</h2>
+                <div class="d-flex gap-4">
+                    <div class="form-check">
+                        {{ form.is_published }}
+                        <label class="form-check-label" for="{{ form.is_published.id_for_label }}">
+                            {{ form.is_published.label }}
+                        </label>
+                    </div>
+                    <div class="form-check">
+                        {{ form.is_exclusive }}
+                        <label class="form-check-label" for="{{ form.is_exclusive.id_for_label }}">
+                            {{ form.is_exclusive.label }}
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            {# ── Кнопки ──────────────────────────────────────────────────── #}
+            <div class="d-flex gap-3">
+                <button type="submit" class="btn btn-primary px-4">
+                    {{ submit_label }}
+                </button>
+                <a href="{% url 'properties:list' %}" class="btn btn-outline-secondary">
+                    Отмена
+                </a>
+            </div>
+
+        </form>
+    </div>
+</div>
+{% endblock %}

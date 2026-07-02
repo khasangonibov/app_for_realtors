@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+{% load static humanize %}
+
+{% block title %}{{ selection.title }}{% endblock %}
+
+{% block content %}
+<div class="bg-light min-vh-100">
+
+    <nav class="navbar navbar-light bg-white border-bottom mb-4">
+        <div class="container">
+            <span class="navbar-brand">{{ selection.agency.name }}</span>
+        </div>
+    </nav>
+
+    <div class="container pb-5">
+
+        <div class="mb-4">
+            <h1 class="h3 mb-1">{{ selection.title }}</h1>
+            <p class="text-muted">
+                Подборка объектов от {{ selection.agent.get_full_name|default:selection.agent.username }}
+            </p>
+        </div>
+
+        {% for item in items %}
+        <div class="bg-white rounded border mb-4 overflow-hidden shadow-sm">
+
+            {# Фотогалерея объекта #}
+            {% with photos=item.property.photos.all %}
+            {% if photos %}
+            <div id="gallery-{{ item.pk }}" class="carousel slide" data-bs-ride="false">
+                <div class="carousel-inner">
+                    {% for photo in photos %}
+                    <div class="carousel-item {% if forloop.first %}active{% endif %}">
+                        <img src="{{ photo.image.url }}"
+                             class="d-block w-100"
+                             style="height: 300px; object-fit: cover;"
+                             alt="">
+                    </div>
+                    {% endfor %}
+                </div>
+                {% if photos|length > 1 %}
+                <button class="carousel-control-prev" type="button"
+                        data-bs-target="#gallery-{{ item.pk }}" data-bs-slide="prev">
+                    <span class="carousel-control-prev-icon"></span>
+                </button>
+                <button class="carousel-control-next" type="button"
+                        data-bs-target="#gallery-{{ item.pk }}" data-bs-slide="next">
+                    <span class="carousel-control-next-icon"></span>
+                </button>
+                {% endif %}
+            </div>
+            {% else %}
+            <div class="bg-secondary-subtle d-flex align-items-center justify-content-center"
+                 style="height: 200px;">
+                <span class="text-muted">Фото отсутствуют</span>
+            </div>
+            {% endif %}
+            {% endwith %}
+
+            <div class="p-4">
+                <div class="row">
+                    <div class="col-md-8">
+
+                        {# Заголовок объекта #}
+                        <h2 class="h5 mb-1">
+                            {{ item.property.get_deal_type_display }}
+                            {{ item.property.get_property_type_display|lower }}
+                            {% if item.property.area_total %}, {{ item.property.area_total }} м²{% endif %}
+                            {% if item.property.floor and item.property.floors_total %}
+                                , {{ item.property.floor }}/{{ item.property.floors_total }} этаж
+                            {% endif %}
+                        </h2>
+                        <p class="text-muted mb-3">
+                            {{ item.property.city }}{% if item.property.street %}, {{ item.property.street }}{% endif %}{% if item.property.building %}, {{ item.property.building }}{% endif %}
+                        </p>
+                        <p class="h4 text-primary mb-3">
+                            {{ item.property.price|intcomma }} ₽
+                        </p>
+
+                        {# Комментарий риелтора #}
+                        {% if item.agent_comment %}
+                        <div class="alert alert-info py-2 small">
+                            <strong>Комментарий риелтора:</strong> {{ item.agent_comment }}
+                        </div>
+                        {% endif %}
+
+                    </div>
+
+                    {# Реакция клиента #}
+                    <div class="col-md-4">
+                        <p class="text-muted small mb-2">Ваша реакция:</p>
+                        <form method="post"
+                              action="{% url 'selection_public:react' selection.public_token item.pk %}">
+                            {% csrf_token %}
+                            <div class="d-grid gap-2">
+                                <button type="submit" name="status" value="liked"
+                                        class="btn {% if item.client_status == 'liked' %}btn-success{% else %}btn-outline-success{% endif %}">
+                                    👍 Нравится
+                                </button>
+                                <button type="submit" name="status" value="maybe"
+                                        class="btn {% if item.client_status == 'maybe' %}btn-warning{% else %}btn-outline-warning{% endif %}">
+                                    🤔 Возможно
+                                </button>
+                                <button type="submit" name="status" value="rejected"
+                                        class="btn {% if item.client_status == 'rejected' %}btn-danger{% else %}btn-outline-danger{% endif %}">
+                                    👎 Не нравится
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+        {% empty %}
+        <div class="text-center py-5 text-muted">
+            В подборке пока нет объектов.
+        </div>
+        {% endfor %}
+
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+{% load humanize %}
+
+{% block title %}Подборки{% endblock %}
+
+{% block content %}
+<div class="bg-light min-vh-100">
+
+    <nav class="navbar navbar-light bg-white border-bottom mb-4">
+        <div class="container-fluid px-4">
+            <span class="navbar-brand">
+                {% if agency %}{{ agency.name }}{% else %}CRM{% endif %}
+            </span>
+            <div class="d-flex align-items-center gap-3">
+                <a href="{% url 'properties:list' %}" class="btn btn-outline-secondary btn-sm">Объекты</a>
+                <a href="{% url 'contacts:list' %}" class="btn btn-outline-secondary btn-sm">Контакты</a>
+                <a href="{% url 'deals:board' %}" class="btn btn-outline-secondary btn-sm">Сделки</a>
+                <form method="post" action="{% url 'accounts:logout' %}" class="d-inline">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-outline-secondary btn-sm">Выйти</button>
+                </form>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid px-4">
+
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h1 class="h3 mb-0">Подборки</h1>
+                <span class="text-muted small">Всего: {{ total_count }}</span>
+            </div>
+            <a href="{% url 'selections:create' %}" class="btn btn-primary">
+                + Новая подборка
+            </a>
+        </div>
+
+        {% if selections %}
+        <div class="row g-3">
+            {% for selection in selections %}
+            <div class="col-md-6 col-xl-4">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-body">
+                        <h5 class="card-title mb-1">{{ selection.title }}</h5>
+
+                        {% if selection.contact %}
+                        <p class="text-muted small mb-2">
+                            Клиент: {{ selection.contact.full_name }}
+                        </p>
+                        {% endif %}
+
+                        <p class="text-muted small mb-3">
+                            Объектов: {{ selection.items.count }}
+                        </p>
+
+                        <p class="text-muted small mb-0">
+                            Создана: {{ selection.created_at|date:"d.m.Y" }}
+                        </p>
+                    </div>
+                    <div class="card-footer bg-white border-top d-flex gap-2">
+                        <a href="{% url 'selections:detail' selection.pk %}"
+                           class="btn btn-outline-secondary btn-sm flex-grow-1">
+                            Открыть
+                        </a>
+                        <button class="btn btn-outline-primary btn-sm flex-grow-1"
+                                onclick="copyLink('{{ request.scheme }}://{{ request.get_host }}{{ selection.get_public_url }}')">
+                            Скопировать ссылку
+                        </button>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        {% else %}
+        <div class="text-center py-5">
+            <p class="text-muted">Подборок пока нет.</p>
+            <a href="{% url 'selections:create' %}" class="btn btn-primary">
+                Создать первую подборку
+            </a>
+        </div>
+        {% endif %}
+
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function copyLink(url) {
+        navigator.clipboard.writeText(url).then(() => {
+            const toast = document.createElement('div');
+            toast.className = 'position-fixed bottom-0 end-0 m-3 alert alert-success shadow';
+            toast.style.zIndex = '9999';
+            toast.textContent = 'Ссылка скопирована!';
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 2000);
+        });
+    }
+</script>
+{% endblock %}

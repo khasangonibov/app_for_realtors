@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="bg-light min-vh-100">
+
+    <nav class="navbar navbar-light bg-white border-bottom mb-4">
+        <div class="container-fluid px-4">
+            <span class="navbar-brand">
+                {% if agency %}{{ agency.name }}{% else %}CRM{% endif %}
+            </span>
+            <div class="d-flex align-items-center gap-3">
+                <a href="{% url 'tasks:list' %}" class="btn btn-outline-secondary btn-sm">
+                    ← Назад к задачам
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container pb-5">
+        <h1 class="h3 mb-4">{{ title }}</h1>
+
+        {% if form.errors %}
+        <div class="alert alert-danger mb-4">
+            <strong>Исправьте ошибки:</strong>
+            <ul class="mb-0 mt-2">
+                {% for field in form %}
+                    {% for error in field.errors %}
+                    <li><strong>{{ field.label }}:</strong> {{ error }}</li>
+                    {% endfor %}
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+
+        <form method="post" novalidate>
+            {% csrf_token %}
+
+            <div class="bg-white rounded p-4 mb-4 border">
+                <h2 class="h5 mb-3">Задача</h2>
+                <div class="row g-3">
+                    <div class="col-12">
+                        <label class="form-label">
+                            {{ form.title.label }} <span class="text-danger">*</span>
+                        </label>
+                        {{ form.title }}
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">{{ form.task_type.label }}</label>
+                        {{ form.task_type }}
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">{{ form.priority.label }}</label>
+                        {{ form.priority }}
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">
+                            {{ form.due_date.label }} <span class="text-danger">*</span>
+                        </label>
+                        {{ form.due_date }}
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">{{ form.description.label }}</label>
+                        {{ form.description }}
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded p-4 mb-4 border">
+                <h2 class="h5 mb-3">Привязка (необязательно)</h2>
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label">{{ form.contact.label }}</label>
+                        {{ form.contact }}
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">{{ form.related_property.label }}</label>
+                        {{ form.related_property }}
+                    </div>
+                </div>
+            </div>
+
+            {% if task and task.is_done %}
+            <div class="alert alert-success mb-4">
+                Задача выполнена {{ task.done_at|date:"d.m.Y H:i" }}
+            </div>
+            {% endif %}
+
+            <div class="d-flex gap-3">
+                <button type="submit" class="btn btn-primary px-4">
+                    {{ submit_label }}
+                </button>
+                <a href="{% url 'tasks:list' %}" class="btn btn-outline-secondary">
+                    Отмена
+                </a>
+                {% if task and not task.is_done %}
+                <form method="post" action="{% url 'tasks:done' task.pk %}" class="d-inline">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-success">
+                        Отметить выполненной
+                    </button>
+                </form>
+                {% endif %}
+            </div>
+
+        </form>
+    </div>
+</div>
+{% endblock %}

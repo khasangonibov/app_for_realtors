@@ -1,0 +1,27 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}CRM{% endblock %} — {% if agency %}{{ agency.name }}{% else %}Агентство недвижимости{% endif %}</title>
+
+    <!-- Bootstrap 5 (локальный, без CDN) -->
+    <link rel="stylesheet" href="{% static 'vendor/bootstrap/css/bootstrap.min.css' %}">
+
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+
+    {% block content %}
+    {% endblock %}
+
+    <!-- Bootstrap JS (bundle включает Popper.js) -->
+    <script src="{% static 'vendor/bootstrap/js/bootstrap.bundle.min.js' %}"></script>
+
+    <!-- HTMX — для частичных обновлений страниц без перезагрузки -->
+    <script src="{% static 'vendor/htmx/htmx.min.js' %}"></script>
+
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

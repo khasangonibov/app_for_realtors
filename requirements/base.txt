@@ -1,0 +1,40 @@
+# Django
+Django==5.1.4
+django-environ==0.11.2          # читает .env файл в settings
+django-extensions==3.2.3        # доп. команды manage.py
+
+# База данных
+psycopg2-binary==2.9.10         # драйвер PostgreSQL
+
+# Авторизация и безопасность
+djangorestframework==3.15.2     # REST API
+djangorestframework-simplejwt==5.3.1  # JWT токены
+django-cors-headers==4.6.0      # CORS для API
+
+# Хранение файлов (S3)
+django-storages==1.14.4         # абстракция над S3
+boto3==1.35.0                   # AWS S3 / MinIO клиент
+Pillow==11.1.0                  # обработка изображений
+
+# Асинхронные задачи
+celery==5.4.0
+redis==5.2.1
+django-celery-beat==2.7.0       # периодические задачи через БД
+
+# Формы и валидация
+django-crispy-forms==2.3
+crispy-bootstrap5==2024.10
+
+# HTMX — серверные частичные обновления страниц
+django-htmx==1.21.0
+
+# Утилиты
+python-slugify==8.0.4           # генерация slug из кириллицы
+django-import-export==4.3.0    # экспорт в Excel/CSV
+openpyxl==3.1.5                 # для экспорта в .xlsx
+
+# Rate limiting
+django-ratelimit==4.1.0
+
+# Логирование
+sentry-sdk==2.19.2

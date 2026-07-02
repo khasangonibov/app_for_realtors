@@ -1,0 +1,7 @@
+-r base.txt
+
+# WSGI сервер
+gunicorn==23.0.0
+
+# Статика на проде
+whitenoise==6.8.2               # раздача статики без nginx (или как fallback)
