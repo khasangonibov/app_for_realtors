@@ -1,13 +1,13 @@
-from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib import messages
 from django.utils import timezone
 
+from apps.accounts.decorators import crm_required
 from .models import Task
 from .forms import TaskForm
 
 
-@login_required
+@crm_required
 def task_list(request):
     # Базовый queryset — все задачи риелтора
     base_qs = Task.objects.filter(
@@ -33,7 +33,7 @@ def task_list(request):
         'now': now,
     })
 
-@login_required
+@crm_required
 def task_create(request):
     if request.method == 'POST':
         form = TaskForm(request.POST, agency=request.user.agency)
@@ -54,7 +54,7 @@ def task_create(request):
     })
 
 
-@login_required
+@crm_required
 def task_edit(request, pk):
     task = get_object_or_404(
         Task, pk=pk, agency=request.user.agency
@@ -76,7 +76,7 @@ def task_edit(request, pk):
     })
 
 
-@login_required
+@crm_required
 def task_done(request, pk):
     """Отметить задачу как выполненную — только POST."""
     if request.method == 'POST':

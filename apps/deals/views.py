@@ -1,12 +1,12 @@
-from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib import messages
 
+from apps.accounts.decorators import crm_required
 from .models import Deal
 from .forms import DealForm
 
 
-@login_required
+@crm_required
 def deal_board(request):
     """Kanban-доска сделок по стадиям."""
     queryset = Deal.objects.filter(
@@ -44,7 +44,7 @@ def deal_board(request):
     })
 
 
-@login_required
+@crm_required
 def deal_create(request):
     if request.method == 'POST':
         form = DealForm(request.POST, agency=request.user.agency)
@@ -65,7 +65,7 @@ def deal_create(request):
     })
 
 
-@login_required
+@crm_required
 def deal_edit(request, pk):
     deal = get_object_or_404(
         Deal, pk=pk, agency=request.user.agency

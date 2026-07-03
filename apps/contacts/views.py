@@ -1,13 +1,13 @@
-from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib import messages
 from django.db.models import Q
 
+from apps.accounts.decorators import crm_required
 from .models import Contact, ContactActivity
 from .forms import ContactForm, ActivityForm
 
 
-@login_required
+@crm_required
 def contact_list(request):
     """Список контактов агентства с поиском и фильтрами."""
     queryset = Contact.objects.filter(
@@ -49,7 +49,7 @@ def contact_list(request):
     })
 
 
-@login_required
+@crm_required
 def contact_detail(request, pk):
     """Карточка контакта — данные + история активностей."""
     contact = get_object_or_404(
@@ -77,7 +77,7 @@ def contact_detail(request, pk):
     })
 
 
-@login_required
+@crm_required
 def contact_create(request):
     """Создание нового контакта."""
     if request.method == 'POST':
@@ -99,7 +99,7 @@ def contact_create(request):
     })
 
 
-@login_required
+@crm_required
 def contact_edit(request, pk):
     """Редактирование контакта."""
     contact = get_object_or_404(

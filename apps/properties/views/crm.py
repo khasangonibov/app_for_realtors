@@ -4,7 +4,6 @@ CRM-views для работы с объектами недвижимости.
 """
 
 from django.shortcuts import render, get_object_or_404, redirect
-from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.db.models import Q as models_Q
 from django.http import JsonResponse
@@ -12,9 +11,9 @@ from django.views.decorators.http import require_POST
 
 from apps.properties.models import Property, PropertyPhoto
 from apps.properties.forms import PropertyFilterForm, PropertyForm
+from apps.accounts.decorators import crm_required
 
-
-@login_required
+@crm_required
 def property_list(request):
     """Список объектов для риелтора.
 
@@ -63,7 +62,7 @@ def property_list(request):
         'total_count': queryset.count(),
     })
     
-@login_required
+@crm_required
 def property_create(request):
     """Создание нового объекта недвижимости.
     agency и agent проставляются автоматически из текущего пользователя —
@@ -89,7 +88,7 @@ def property_create(request):
     })
 
 
-@login_required
+@crm_required
 def property_edit(request, pk):
     """Редактирование существующего объекта.
     Проверяем что объект принадлежит агентству текущего пользователя —
@@ -117,7 +116,7 @@ def property_edit(request, pk):
         'submit_label': 'Сохранить изменения',
     })
     
-@login_required
+@crm_required
 @require_POST
 def photo_upload(request, pk):
     """Загрузка фото объекта — принимает файлы через AJAX/форму.
@@ -148,7 +147,7 @@ def photo_upload(request, pk):
     return JsonResponse({'photos': uploaded})
 
 
-@login_required
+@crm_required
 @require_POST
 def photo_delete(request, pk, photo_pk):
     """Удаление фото объекта."""
@@ -163,7 +162,7 @@ def photo_delete(request, pk, photo_pk):
     return JsonResponse({'status': 'ok'})
 
 
-@login_required
+@crm_required
 @require_POST
 def photo_set_cover(request, pk, photo_pk):
     """Установить фото как обложку."""

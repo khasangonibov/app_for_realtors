@@ -1,12 +1,12 @@
-from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib import messages
 
+from apps.accounts.decorators import crm_required
 from apps.selections.models import Selection, SelectionItem
 from apps.selections.forms import SelectionForm, SelectionItemForm
 
 
-@login_required
+@crm_required
 def selection_list(request):
     """Список подборок риелтора."""
     queryset = Selection.objects.filter(
@@ -22,7 +22,7 @@ def selection_list(request):
     })
 
 
-@login_required
+@crm_required
 def selection_create(request):
     """Создание новой подборки."""
     if request.method == 'POST':
@@ -44,7 +44,7 @@ def selection_create(request):
     })
 
 
-@login_required
+@crm_required
 def selection_detail(request, pk):
     """Страница подборки в CRM — список объектов + форма добавления."""
     selection = get_object_or_404(
@@ -77,7 +77,7 @@ def selection_detail(request, pk):
     })
 
 
-@login_required
+@crm_required
 def selection_item_delete(request, pk, item_pk):
     """Удаление объекта из подборки."""
     selection = get_object_or_404(

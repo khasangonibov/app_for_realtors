@@ -1,9 +1,10 @@
 from django.contrib.auth import views as auth_views
-from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.shortcuts import render, get_object_or_404, redirect
 from django.utils import timezone
 from django.utils.crypto import get_random_string
+
+from apps.accounts.decorators import crm_required, manager_required
 
 from .forms import CRMLoginForm
 from .models import User, UserProfile
@@ -13,12 +14,24 @@ class CRMLoginView(auth_views.LoginView):
     form_class = CRMLoginForm
     redirect_authenticated_user = True
 
+    def form_valid(self, form):
+        """После успешной проверки логина/пароля — проверяем роль."""
+        user = form.get_user()
+        # Клиентам (внешним пользователям) вход в CRM закрыт
+        if user.role == UserProfile.Role.CLIENT:
+            form.add_error(
+                None,
+                'Доступ в CRM закрыт для внешних пользователей.'
+            )
+            return self.form_invalid(form)
+        return super().form_valid(form)
+
 
 class CRMLogoutView(auth_views.LogoutView):
     pass
 
 
-@login_required
+@crm_required
 def dashboard(request):
     """Главная страница CRM — статистика и виджеты."""
     from apps.properties.models import Property
@@ -94,13 +107,9 @@ def _check_manager_access(user):
     return user.role in [UserProfile.Role.ADMIN, UserProfile.Role.MANAGER]
 
 
-@login_required
+@crm_required
+@manager_required
 def users_list(request):
-    """Список сотрудников агентства."""
-    if not _check_manager_access(request.user):
-        messages.error(request, 'Недостаточно прав.')
-        return redirect('accounts:dashboard')
-
     users = User.objects.filter(
         agency=request.user.agency
     ).select_related('profile').order_by('last_name', 'first_name')
@@ -110,31 +119,23 @@ def users_list(request):
     })
 
 
-@login_required
+@crm_required
+@manager_required
 def user_invite(request):
-    """Приглашение нового сотрудника — создаём аккаунт с временным паролем."""
-    if not _check_manager_access(request.user):
-        messages.error(request, 'Недостаточно прав.')
-        return redirect('accounts:dashboard')
-
     if request.method == 'POST':
         from .forms import UserInviteForm
         form = UserInviteForm(request.POST)
         if form.is_valid():
-            # Генерируем временный пароль
+            from django.utils.crypto import get_random_string
             temp_password = get_random_string(12)
-
             user = form.save(commit=False)
             user.agency = request.user.agency
             user.set_password(temp_password)
             user.save()
-
-            # Создаём профиль с выбранной ролью
             UserProfile.objects.create(
                 user=user,
                 role=form.cleaned_data['role'],
             )
-
             messages.success(
                 request,
                 f'Сотрудник {user.get_full_name()} создан. '
@@ -151,23 +152,16 @@ def user_invite(request):
     })
 
 
-@login_required
+@crm_required
+@manager_required
 def user_edit(request, pk):
-    """Редактирование роли и данных сотрудника."""
-    if not _check_manager_access(request.user):
-        messages.error(request, 'Недостаточно прав.')
-        return redirect('accounts:dashboard')
-
-    user = get_object_or_404(
-        User, pk=pk, agency=request.user.agency
-    )
+    user = get_object_or_404(User, pk=pk, agency=request.user.agency)
 
     if request.method == 'POST':
         from .forms import UserEditForm
         form = UserEditForm(request.POST, instance=user)
         if form.is_valid():
             form.save()
-            # Обновляем роль
             profile, _ = UserProfile.objects.get_or_create(user=user)
             profile.role = form.cleaned_data['role']
             profile.save()
@@ -185,41 +179,27 @@ def user_edit(request, pk):
     })
 
 
-@login_required
+@crm_required
+@manager_required
 def user_toggle_active(request, pk):
-    """Активировать/деактивировать сотрудника."""
-    if not _check_manager_access(request.user):
-        messages.error(request, 'Недостаточно прав.')
-        return redirect('accounts:dashboard')
-
     if request.method == 'POST':
-        user = get_object_or_404(
-            User, pk=pk, agency=request.user.agency
-        )
-        # Нельзя деактивировать самого себя
+        user = get_object_or_404(User, pk=pk, agency=request.user.agency)
         if user == request.user:
             messages.error(request, 'Нельзя деактивировать свой аккаунт.')
             return redirect('accounts:users_list')
-
         user.is_active = not user.is_active
         user.save(update_fields=['is_active'])
         status = 'активирован' if user.is_active else 'деактивирован'
         messages.success(request, f'Сотрудник {user.get_full_name()} {status}.')
-
     return redirect('accounts:users_list')
 
 
-@login_required
+@crm_required
+@manager_required
 def user_reset_password(request, pk):
-    """Сброс пароля сотрудника — генерируем новый временный пароль."""
-    if not _check_manager_access(request.user):
-        messages.error(request, 'Недостаточно прав.')
-        return redirect('accounts:dashboard')
-
     if request.method == 'POST':
-        user = get_object_or_404(
-            User, pk=pk, agency=request.user.agency
-        )
+        from django.utils.crypto import get_random_string
+        user = get_object_or_404(User, pk=pk, agency=request.user.agency)
         temp_password = get_random_string(12)
         user.set_password(temp_password)
         user.save()
@@ -227,5 +207,4 @@ def user_reset_password(request, pk):
             request,
             f'Новый пароль для {user.get_full_name()}: {temp_password}'
         )
-
     return redirect('accounts:users_list')

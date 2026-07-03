@@ -1,4 +1,5 @@
 Логины для входа:
   agent1   / testpass123  (риелтор)
   agent2   / testpass123  (риелтор)
-  agent3   / testpass123  (риелтор)
+  agent3   / co6dgKkmeFiE  (внешний пользователь)
+  agent4   / JdgYwnwF8Qy0  (риелтор)

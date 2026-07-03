@@ -1,16 +1,16 @@
-from django.contrib.auth.decorators import login_required
 from django.shortcuts import render
 from django.db.models import Count, Sum, Q
 from django.utils import timezone
 from datetime import timedelta
 
+from apps.accounts.decorators import crm_required
 from apps.properties.models import Property, PropertyView
 from apps.contacts.models import Contact
 from apps.deals.models import Deal
 from apps.accounts.models import User
 
 
-@login_required
+@crm_required
 def analytics_dashboard(request):
     """Полноценная страница аналитики агентства."""
     agency = request.user.agency
