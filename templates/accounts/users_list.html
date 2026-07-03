@@ -1,0 +1,137 @@
+{% extends "base.html" %}
+{% load humanize %}
+
+{% block title %}Сотрудники{% endblock %}
+
+{% block content %}
+<div class="bg-light min-vh-100">
+
+    <nav class="navbar navbar-light bg-white border-bottom mb-4">
+        <div class="container-fluid px-4">
+            <span class="navbar-brand fw-bold">
+                {% if agency %}{{ agency.name }}{% else %}CRM{% endif %}
+            </span>
+            <div class="d-flex align-items-center gap-2">
+                <a href="{% url 'accounts:dashboard' %}" class="btn btn-outline-secondary btn-sm">
+                    ← Дашборд
+                </a>
+                <form method="post" action="{% url 'accounts:logout' %}" class="d-inline">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-outline-secondary btn-sm">Выйти</button>
+                </form>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid px-4">
+
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h1 class="h3 mb-0">Сотрудники</h1>
+                <span class="text-muted small">Всего: {{ users|length }}</span>
+            </div>
+            <a href="{% url 'accounts:user_invite' %}" class="btn btn-primary">
+                + Пригласить сотрудника
+            </a>
+        </div>
+
+        {# Сообщения — временный пароль показываем здесь #}
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        {% endfor %}
+
+        <div class="bg-white rounded border overflow-hidden">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Сотрудник</th>
+                        <th>Логин</th>
+                        <th>Телефон</th>
+                        <th>Роль</th>
+                        <th class="text-center">Статус</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for user in users %}
+                    <tr class="{% if not user.is_active %}table-secondary opacity-50{% endif %}">
+                        <td>
+                            <div class="fw-semibold">
+                                {{ user.get_full_name|default:user.username }}
+                                {% if user == request.user %}
+                                <span class="badge bg-secondary ms-1">Вы</span>
+                                {% endif %}
+                            </div>
+                            <div class="text-muted small">{{ user.email }}</div>
+                        </td>
+                        <td class="text-muted">{{ user.username }}</td>
+                        <td class="text-muted small">{{ user.phone|default:"—" }}</td>
+                        <td>
+                            {% if user.profile %}
+                            <span class="badge
+                                {% if user.profile.role == 'admin' %}bg-danger
+                                {% elif user.profile.role == 'manager' %}bg-warning text-dark
+                                {% else %}bg-primary{% endif %}">
+                                {{ user.profile.get_role_display }}
+                            </span>
+                            {% else %}
+                            <span class="text-muted small">Не задана</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-center">
+                            {% if user.is_active %}
+                            <span class="badge bg-success">Активен</span>
+                            {% else %}
+                            <span class="badge bg-secondary">Неактивен</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="d-flex gap-2 justify-content-end">
+                                <a href="{% url 'accounts:user_edit' user.pk %}"
+                                   class="btn btn-outline-secondary btn-sm">
+                                    Изменить
+                                </a>
+
+                                {# Сброс пароля #}
+                                <form method="post"
+                                      action="{% url 'accounts:user_reset_password' user.pk %}">
+                                    {% csrf_token %}
+                                    <button type="submit"
+                                            class="btn btn-outline-warning btn-sm"
+                                            onclick="return confirm('Сбросить пароль для {{ user.get_full_name }}? Новый временный пароль появится вверху страницы.')">
+                                        Сброс пароля
+                                    </button>
+                                </form>
+
+                                {# Активировать/деактивировать #}
+                                {% if user != request.user %}
+                                <form method="post"
+                                      action="{% url 'accounts:user_toggle' user.pk %}">
+                                    {% csrf_token %}
+                                    <button type="submit"
+                                            class="btn btn-sm {% if user.is_active %}btn-outline-danger{% else %}btn-outline-success{% endif %}"
+                                            onclick="return confirm('{% if user.is_active %}Деактивировать{% else %}Активировать{% endif %} сотрудника {{ user.get_full_name }}?')">
+                                        {% if user.is_active %}Деактивировать{% else %}Активировать{% endif %}
+                                    </button>
+                                </form>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="text-center py-4 text-muted">
+                            Сотрудников пока нет.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+    </div>
+</div>
+{% endblock %}

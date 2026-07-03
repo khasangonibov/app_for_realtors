@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="bg-light min-vh-100">
+
+    <nav class="navbar navbar-light bg-white border-bottom mb-4">
+        <div class="container-fluid px-4">
+            <span class="navbar-brand fw-bold">
+                {% if agency %}{{ agency.name }}{% else %}CRM{% endif %}
+            </span>
+            <div class="d-flex align-items-center gap-2">
+                <a href="{% url 'accounts:users_list' %}" class="btn btn-outline-secondary btn-sm">
+                    ← Назад к сотрудникам
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container pb-5">
+        <h1 class="h3 mb-4">{{ title }}</h1>
+
+        {% if form.errors %}
+        <div class="alert alert-danger mb-4">
+            <strong>Исправьте ошибки:</strong>
+            <ul class="mb-0 mt-2">
+                {% for field in form %}
+                    {% for error in field.errors %}
+                    <li><strong>{{ field.label }}:</strong> {{ error }}</li>
+                    {% endfor %}
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+
+        <form method="post" novalidate>
+            {% csrf_token %}
+
+            <div class="bg-white rounded p-4 mb-4 border">
+                <h2 class="h5 mb-3">Личные данные</h2>
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label">
+                            {{ form.last_name.label }}
+                        </label>
+                        {{ form.last_name }}
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">
+                            {{ form.first_name.label }}
+                            <span class="text-danger">*</span>
+                        </label>
+                        {{ form.first_name }}
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">{{ form.email.label }}</label>
+                        {{ form.email }}
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">{{ form.phone.label }}</label>
+                        {{ form.phone }}
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded p-4 mb-4 border">
+                <h2 class="h5 mb-3">Доступ</h2>
+                <div class="row g-3">
+                    {% if form.username %}
+                    <div class="col-md-6">
+                        <label class="form-label">
+                            {{ form.username.label }}
+                            <span class="text-danger">*</span>
+                        </label>
+                        {{ form.username }}
+                        <div class="form-text">
+                            Используется для входа в систему
+                        </div>
+                    </div>
+                    {% endif %}
+                    <div class="col-md-6">
+                        <label class="form-label">{{ form.role.label }}</label>
+                        {{ form.role }}
+                        <div class="form-text">
+                            Администратор — полный доступ,
+                            Руководитель — аналитика и все объекты,
+                            Риелтор — только свои объекты
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {% if not edit_user %}
+            <div class="alert alert-info mb-4">
+                <strong>Временный пароль</strong> будет сгенерирован автоматически
+                и показан после создания аккаунта. Передайте его сотруднику.
+            </div>
+            {% endif %}
+
+            <div class="d-flex gap-3">
+                <button type="submit" class="btn btn-primary px-4">
+                    {% if edit_user %}Сохранить{% else %}Создать аккаунт{% endif %}
+                </button>
+                <a href="{% url 'accounts:users_list' %}" class="btn btn-outline-secondary">
+                    Отмена
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

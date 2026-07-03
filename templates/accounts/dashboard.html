@@ -250,6 +250,11 @@
                         <a href="{% url 'tasks:create' %}" class="btn btn-outline-secondary btn-sm">
                             + Новая задача
                         </a>
+                        {% if not request.user.is_agent %}
+                        <a href="{% url 'accounts:users_list' %}" class="btn btn-outline-dark btn-sm">
+                            👥 Сотрудники
+                        </a>
+                        {% endif %}
                     </div>
                 </div>
 

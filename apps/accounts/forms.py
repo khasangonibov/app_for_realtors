@@ -5,6 +5,8 @@
 from django import forms
 from django.contrib.auth.forms import AuthenticationForm
 
+from .models import User, UserProfile
+
 
 class CRMLoginForm(AuthenticationForm):
     """Форма входа в CRM.
@@ -28,3 +30,58 @@ class CRMLoginForm(AuthenticationForm):
             'placeholder': 'Введите пароль',
         })
     )
+    
+class UserInviteForm(forms.ModelForm):
+    """Форма создания нового сотрудника."""
+    role = forms.ChoiceField(
+        label='Роль',
+        choices=UserProfile.Role.choices,
+        initial=UserProfile.Role.AGENT,
+        widget=forms.Select(attrs={'class': 'form-select'}),
+    )
+
+    class Meta:
+        model = User
+        fields = ['first_name', 'last_name', 'username', 'email', 'phone']
+        widgets = {
+            'first_name': forms.TextInput(attrs={'class': 'form-control'}),
+            'last_name': forms.TextInput(attrs={'class': 'form-control'}),
+            'username': forms.TextInput(attrs={'class': 'form-control'}),
+            'email': forms.EmailInput(attrs={'class': 'form-control'}),
+            'phone': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': '+7 (999) 999-99-99',
+            }),
+        }
+        labels = {
+            'first_name': 'Имя',
+            'last_name': 'Фамилия',
+            'username': 'Логин',
+            'email': 'Email',
+            'phone': 'Телефон',
+        }
+
+
+class UserEditForm(forms.ModelForm):
+    """Форма редактирования сотрудника."""
+    role = forms.ChoiceField(
+        label='Роль',
+        choices=UserProfile.Role.choices,
+        widget=forms.Select(attrs={'class': 'form-select'}),
+    )
+
+    class Meta:
+        model = User
+        fields = ['first_name', 'last_name', 'email', 'phone']
+        widgets = {
+            'first_name': forms.TextInput(attrs={'class': 'form-control'}),
+            'last_name': forms.TextInput(attrs={'class': 'form-control'}),
+            'email': forms.EmailInput(attrs={'class': 'form-control'}),
+            'phone': forms.TextInput(attrs={'class': 'form-control'}),
+        }
+        labels = {
+            'first_name': 'Имя',
+            'last_name': 'Фамилия',
+            'email': 'Email',
+            'phone': 'Телефон',
+        }
