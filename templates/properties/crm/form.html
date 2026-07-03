@@ -186,6 +186,79 @@
                 </div>
             </div>
 
+            {# ── Фото объекта (только при редактировании) ───────────────────── #}
+            {% if property %}
+            <div class="bg-white rounded p-4 mb-4 border">
+                <h2 class="h5 mb-3">Фотографии</h2>
+
+                {# Загруженные фото #}
+                <div id="photoGrid" class="row g-2 mb-3">
+                    {% for photo in property.photos.all %}
+                    <div class="col-6 col-md-3 col-xl-2" id="photo-{{ photo.pk }}">
+                        <div class="position-relative">
+                            <img src="{{ photo.image.url }}"
+                                class="img-fluid rounded {% if photo.is_cover %}border border-primary border-3{% endif %}"
+                                style="height: 120px; width: 100%; object-fit: cover;"
+                                alt="">
+                            {% if photo.is_cover %}
+                            <span class="position-absolute top-0 start-0 badge bg-primary m-1">
+                                Обложка
+                            </span>
+                            {% endif %}
+                            <div class="position-absolute bottom-0 start-0 end-0 p-1 d-flex gap-1">
+                                {% if not photo.is_cover %}
+                                <button type="button"
+                                        class="btn btn-primary btn-sm flex-grow-1"
+                                        onclick="setCover('{{ property.pk }}', '{{ photo.pk }}')">
+                                    ★
+                                </button>
+                                {% endif %}
+                                <button type="button"
+                                        class="btn btn-danger btn-sm flex-grow-1"
+                                        onclick="deletePhoto('{{ property.pk }}', '{{ photo.pk }}')">
+                                    ✕
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                {# Форма загрузки новых фото #}
+                <div class="border-2 border-dashed rounded p-4 text-center"
+                    id="dropZone"
+                    style="border: 2px dashed #dee2e6; cursor: pointer;">
+                    <input type="file"
+                        id="photoInput"
+                        accept="image/*"
+                        multiple
+                        style="display: none;"
+                        onchange="uploadPhotos('{{ property.pk }}', this.files)">
+                    <div onclick="document.getElementById('photoInput').click()">
+                        <div class="text-muted mb-2">📷</div>
+                        <div class="fw-semibold">Нажмите чтобы выбрать фото</div>
+                        <div class="text-muted small">или перетащите файлы сюда</div>
+                        <div class="text-muted small mt-1">JPG, PNG — несколько файлов сразу</div>
+                    </div>
+                </div>
+
+                {# Прогресс загрузки #}
+                <div id="uploadProgress" class="mt-3" style="display: none;">
+                    <div class="progress">
+                        <div class="progress-bar progress-bar-striped progress-bar-animated"
+                            style="width: 100%">
+                            Загружаем фото...
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            {% else %}
+            <div class="alert alert-info mb-4">
+                Фотографии можно добавить после сохранения объекта.
+            </div>
+            {% endif %}
+
             {# ── Кнопки ──────────────────────────────────────────────────── #}
             <div class="d-flex gap-3">
                 <button type="submit" class="btn btn-primary px-4">
@@ -199,4 +272,121 @@
         </form>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+{% if property %}
+<script>
+    // CSRF токен для AJAX запросов
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+    // ── Загрузка фото ─────────────────────────────────────────────────────
+    function uploadPhotos(propertyPk, files) {
+        if (!files.length) return;
+
+        const progress = document.getElementById('uploadProgress');
+        progress.style.display = 'block';
+
+        const formData = new FormData();
+        for (const file of files) {
+            formData.append('photos', file);
+        }
+
+        fetch(`/crm/properties/${propertyPk}/photos/`, {
+            method: 'POST',
+            headers: { 'X-CSRFToken': csrfToken },
+            body: formData,
+        })
+        .then(r => r.json())
+        .then(data => {
+            progress.style.display = 'none';
+            if (data.photos) {
+                data.photos.forEach(photo => addPhotoToGrid(propertyPk, photo));
+            }
+            // Сбрасываем input чтобы можно было загрузить те же файлы ещё раз
+            document.getElementById('photoInput').value = '';
+        })
+        .catch(() => {
+            progress.style.display = 'none';
+            alert('Ошибка при загрузке фото. Попробуйте ещё раз.');
+        });
+    }
+
+    // ── Добавить фото в сетку ─────────────────────────────────────────────
+    function addPhotoToGrid(propertyPk, photo) {
+        const grid = document.getElementById('photoGrid');
+        const col = document.createElement('div');
+        col.className = 'col-6 col-md-3 col-xl-2';
+        col.id = `photo-${photo.id}`;
+        col.innerHTML = `
+            <div class="position-relative">
+                <img src="${photo.url}"
+                     class="img-fluid rounded ${photo.is_cover ? 'border border-primary border-3' : ''}"
+                     style="height: 120px; width: 100%; object-fit: cover;"
+                     alt="">
+                ${photo.is_cover ? '<span class="position-absolute top-0 start-0 badge bg-primary m-1">Обложка</span>' : ''}
+                <div class="position-absolute bottom-0 start-0 end-0 p-1 d-flex gap-1">
+                    ${!photo.is_cover ? `<button type="button" class="btn btn-primary btn-sm flex-grow-1"
+                        onclick="setCover('${propertyPk}', '${photo.id}')">★</button>` : ''}
+                    <button type="button" class="btn btn-danger btn-sm flex-grow-1"
+                        onclick="deletePhoto('${propertyPk}', '${photo.id}')">✕</button>
+                </div>
+            </div>`;
+        grid.appendChild(col);
+    }
+
+    // ── Удалить фото ──────────────────────────────────────────────────────
+    function deletePhoto(propertyPk, photoPk) {
+        if (!confirm('Удалить фото?')) return;
+
+        fetch(`/crm/properties/${propertyPk}/photos/${photoPk}/delete/`, {
+            method: 'POST',
+            headers: { 'X-CSRFToken': csrfToken },
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.status === 'ok') {
+                document.getElementById(`photo-${photoPk}`).remove();
+            }
+        });
+    }
+
+    // ── Сделать обложкой ──────────────────────────────────────────────────
+    function setCover(propertyPk, photoPk) {
+        fetch(`/crm/properties/${propertyPk}/photos/${photoPk}/cover/`, {
+            method: 'POST',
+            headers: { 'X-CSRFToken': csrfToken },
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.status === 'ok') {
+                // Перезагружаем страницу чтобы обновить бейджи обложки
+                window.location.reload();
+            }
+        });
+    }
+
+    // ── Drag & Drop ───────────────────────────────────────────────────────
+    const dropZone = document.getElementById('dropZone');
+
+    dropZone.addEventListener('dragover', e => {
+        e.preventDefault();
+        dropZone.style.borderColor = '#0d6efd';
+        dropZone.style.background = '#f0f4ff';
+    });
+
+    dropZone.addEventListener('dragleave', () => {
+        dropZone.style.borderColor = '#dee2e6';
+        dropZone.style.background = '';
+    });
+
+    dropZone.addEventListener('drop', e => {
+        e.preventDefault();
+        dropZone.style.borderColor = '#dee2e6';
+        dropZone.style.background = '';
+        const propertyPk = '{{ property.pk }}';
+        uploadPhotos(propertyPk, e.dataTransfer.files);
+    });
+</script>
+{% endif %}
 {% endblock %}

@@ -56,7 +56,7 @@ LOCAL_APPS = [
     'apps.deals',        # сделки
     'apps.selections',   # подборки для клиентов
     'apps.tasks',        # задачи и напоминания
-    # 'apps.analytics',    # отчёты и аналитика
+    'apps.analytics',    # отчёты и аналитика
     # 'apps.notifications',# уведомления
 ]
 

@@ -1,0 +1,4 @@
+Логины для входа:
+  agent1   / testpass123  (риелтор)
+  agent2   / testpass123  (риелтор)
+  agent3   / testpass123  (риелтор)

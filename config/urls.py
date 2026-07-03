@@ -31,7 +31,7 @@ urlpatterns = [
         path('', include('apps.deals.urls', namespace='deals')),
         path('', include('apps.selections.urls.crm', namespace='selections')),
         path('', include('apps.tasks.urls', namespace='tasks')),
-        # path('', include('apps.analytics.urls', namespace='analytics')),
+        path('', include('apps.analytics.urls', namespace='analytics')),
     ])),
 
     # ── REST API ───────────────────────────────────────────────────────────────

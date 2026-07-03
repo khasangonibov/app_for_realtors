@@ -7,8 +7,10 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.db.models import Q as models_Q
+from django.http import JsonResponse
+from django.views.decorators.http import require_POST
 
-from apps.properties.models import Property
+from apps.properties.models import Property, PropertyPhoto
 from apps.properties.forms import PropertyFilterForm, PropertyForm
 
 
@@ -114,3 +116,67 @@ def property_edit(request, pk):
         'title': 'Редактировать объект',
         'submit_label': 'Сохранить изменения',
     })
+    
+@login_required
+@require_POST
+def photo_upload(request, pk):
+    """Загрузка фото объекта — принимает файлы через AJAX/форму.
+    Возвращает JSON с данными загруженного фото.
+    """
+    property_obj = get_object_or_404(
+        Property, pk=pk, agency=request.user.agency
+    )
+
+    files = request.FILES.getlist('photos')
+    if not files:
+        return JsonResponse({'error': 'Файлы не выбраны'}, status=400)
+
+    uploaded = []
+    for file in files:
+        photo = PropertyPhoto.objects.create(
+            property=property_obj,
+            image=file,
+            # Если фото первое — автоматически делаем обложкой
+            is_cover=not property_obj.photos.exists(),
+        )
+        uploaded.append({
+            'id': str(photo.pk),
+            'url': photo.image.url,
+            'is_cover': photo.is_cover,
+        })
+
+    return JsonResponse({'photos': uploaded})
+
+
+@login_required
+@require_POST
+def photo_delete(request, pk, photo_pk):
+    """Удаление фото объекта."""
+    property_obj = get_object_or_404(
+        Property, pk=pk, agency=request.user.agency
+    )
+    photo = get_object_or_404(
+        PropertyPhoto, pk=photo_pk, property=property_obj
+    )
+    photo.image.delete(save=False)  # удаляем файл с диска
+    photo.delete()
+    return JsonResponse({'status': 'ok'})
+
+
+@login_required
+@require_POST
+def photo_set_cover(request, pk, photo_pk):
+    """Установить фото как обложку."""
+    property_obj = get_object_or_404(
+        Property, pk=pk, agency=request.user.agency
+    )
+    photo = get_object_or_404(
+        PropertyPhoto, pk=photo_pk, property=property_obj
+    )
+    # Снимаем флаг со всех остальных фото
+    PropertyPhoto.objects.filter(
+        property=property_obj, is_cover=True
+    ).update(is_cover=False)
+    photo.is_cover = True
+    photo.save(update_fields=['is_cover'])
+    return JsonResponse({'status': 'ok'})
