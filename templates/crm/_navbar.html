@@ -1,0 +1,127 @@
+{% load static %}
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark sticky-top shadow-sm">
+    <div class="container-fluid px-4">
+
+        {# Логотип / название агентства #}
+        <a class="navbar-brand fw-bold" href="{% url 'accounts:dashboard' %}">
+            {% if agency %}
+                {% if agency.logo %}
+                <img src="{{ agency.logo.url }}"
+                     height="32" class="me-2 rounded"
+                     alt="{{ agency.name }}">
+                {% endif %}
+                {{ agency.name }}
+            {% else %}
+                CRM
+            {% endif %}
+        </a>
+
+        {# Бургер для мобильных #}
+        <button class="navbar-toggler border-0" type="button"
+                data-bs-toggle="collapse"
+                data-bs-target="#crmNavbar">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <div class="collapse navbar-collapse" id="crmNavbar">
+
+            {# Основное меню #}
+            <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                <li class="nav-item">
+                    <a class="nav-link {% if request.resolver_match.namespace == 'properties' %}active{% endif %}"
+                       href="{% url 'properties:list' %}">
+                        🏠 Объекты
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if request.resolver_match.namespace == 'contacts' %}active{% endif %}"
+                       href="{% url 'contacts:list' %}">
+                        👥 Контакты
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if request.resolver_match.namespace == 'deals' %}active{% endif %}"
+                       href="{% url 'deals:board' %}">
+                        🤝 Сделки
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if request.resolver_match.namespace == 'selections' %}active{% endif %}"
+                       href="{% url 'selections:list' %}">
+                        📋 Подборки
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if request.resolver_match.namespace == 'tasks' %}active{% endif %}"
+                       href="{% url 'tasks:list' %}">
+                        ✅ Задачи
+                        {% if overdue_tasks_count %}
+                        <span class="badge bg-danger ms-1">{{ overdue_tasks_count }}</span>
+                        {% endif %}
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if request.resolver_match.namespace == 'analytics' %}active{% endif %}"
+                       href="{% url 'analytics:dashboard' %}">
+                        📊 Аналитика
+                    </a>
+                </li>
+                {% if not request.user.is_agent %}
+                <li class="nav-item">
+                    <a class="nav-link {% if request.resolver_match.url_name == 'users_list' %}active{% endif %}"
+                       href="{% url 'accounts:users_list' %}">
+                        ⚙️ Сотрудники
+                    </a>
+                </li>
+                {% endif %}
+            </ul>
+
+            {# Правая часть — профиль пользователя #}
+            <ul class="navbar-nav ms-auto">
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle d-flex align-items-center gap-2"
+                       href="#" role="button"
+                       data-bs-toggle="dropdown">
+                        {% if request.user.avatar %}
+                        <img src="{{ request.user.avatar.url }}"
+                             class="rounded-circle"
+                             width="28" height="28"
+                             style="object-fit: cover;"
+                             alt="">
+                        {% else %}
+                        <div class="rounded-circle bg-secondary d-flex align-items-center justify-content-center"
+                             style="width: 28px; height: 28px; font-size: 12px;">
+                            {{ request.user.first_name|first|default:"U" }}
+                        </div>
+                        {% endif %}
+                        <span class="d-none d-lg-inline">
+                            {{ request.user.get_full_name|default:request.user.username }}
+                        </span>
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end shadow border-0">
+                        <li>
+                            <span class="dropdown-item-text small text-muted">
+                                {{ request.user.email }}
+                            </span>
+                        </li>
+                        <li>
+                            <span class="dropdown-item-text small text-muted">
+                                {{ request.user.profile.get_role_display|default:"" }}
+                            </span>
+                        </li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li>
+                            <form method="post" action="{% url 'accounts:logout' %}">
+                                {% csrf_token %}
+                                <button type="submit" class="dropdown-item text-danger">
+                                    Выйти
+                                </button>
+                            </form>
+                        </li>
+                    </ul>
+                </li>
+            </ul>
+
+        </div>
+    </div>
+</nav>

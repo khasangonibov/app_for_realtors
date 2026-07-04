@@ -6,39 +6,6 @@
 {% block content %}
 <div class="bg-light min-vh-100">
 
-    {# ── Навбар ──────────────────────────────────────────────────────────── #}
-    <nav class="navbar navbar-light bg-white border-bottom mb-4">
-        <div class="container-fluid px-4">
-            <span class="navbar-brand">
-                {% if agency %}{{ agency.name }}{% else %}CRM{% endif %}
-            </span>
-            <div class="d-flex align-items-center gap-3">
-                <a href="{% url 'properties:list' %}" class="btn btn-outline-secondary btn-sm">
-                    ← Назад к списку
-                </a>
-                <form method="post" action="{% url 'accounts:logout' %}" class="d-inline">
-                    {% csrf_token %}
-                    {# Общие ошибки формы #}
-                    {% if form.errors %}
-                    <div class="alert alert-danger mb-4">
-                        <strong>Пожалуйста, исправьте ошибки:</strong>
-                        <ul class="mb-0 mt-2">
-                            {% for field in form %}
-                                {% for error in field.errors %}
-                                <li><strong>{{ field.label }}:</strong> {{ error }}</li>
-                                {% endfor %}
-                            {% endfor %}
-                            {% for error in form.non_field_errors %}
-                            <li>{{ error }}</li>
-                            {% endfor %}
-                        </ul>
-                    </div>
-                    {% endif %}
-                    <button type="submit" class="btn btn-outline-secondary btn-sm">Выйти</button>
-                </form>
-            </div>
-        </div>
-    </nav>
 
     <div class="container pb-5">
 

@@ -15,24 +15,6 @@
 {% block content %}
 <div class="bg-light min-vh-100">
 
-    <nav class="navbar navbar-light bg-white border-bottom mb-4">
-        <div class="container-fluid px-4">
-            <span class="navbar-brand fw-bold">
-                {% if agency %}{{ agency.name }}{% else %}CRM{% endif %}
-            </span>
-            <div class="d-flex align-items-center gap-2">
-                <a href="{% url 'accounts:dashboard' %}" class="btn btn-outline-secondary btn-sm">Дашборд</a>
-                <a href="{% url 'properties:list' %}" class="btn btn-outline-secondary btn-sm">Объекты</a>
-                <a href="{% url 'contacts:list' %}" class="btn btn-outline-secondary btn-sm">Контакты</a>
-                <a href="{% url 'deals:board' %}" class="btn btn-outline-secondary btn-sm">Сделки</a>
-                <form method="post" action="{% url 'accounts:logout' %}" class="d-inline">
-                    {% csrf_token %}
-                    <button type="submit" class="btn btn-outline-secondary btn-sm">Выйти</button>
-                </form>
-            </div>
-        </div>
-    </nav>
-
     <div class="container-fluid px-4 pb-5">
 
         <div class="d-flex justify-content-between align-items-center mb-4">

@@ -6,22 +6,6 @@
 {% block content %}
 <div class="bg-light min-vh-100">
 
-    <nav class="navbar navbar-light bg-white border-bottom mb-4">
-        <div class="container-fluid px-4">
-            <span class="navbar-brand">
-                {% if agency %}{{ agency.name }}{% else %}CRM{% endif %}
-            </span>
-            <div class="d-flex align-items-center gap-3">
-                <a href="{% url 'contacts:list' %}" class="btn btn-outline-secondary btn-sm">
-                    ← Контакты
-                </a>
-                <a href="{% url 'contacts:edit' contact.pk %}" class="btn btn-primary btn-sm">
-                    Редактировать
-                </a>
-            </div>
-        </div>
-    </nav>
-
     <div class="container pb-5">
         <div class="row g-4">
 

@@ -5,19 +5,6 @@
 {% block content %}
 <div class="bg-light min-vh-100">
 
-    <nav class="navbar navbar-light bg-white border-bottom mb-4">
-        <div class="container-fluid px-4">
-            <span class="navbar-brand">
-                {% if agency %}{{ agency.name }}{% else %}CRM{% endif %}
-            </span>
-            <div class="d-flex align-items-center gap-3">
-                <a href="{% url 'deals:board' %}" class="btn btn-outline-secondary btn-sm">
-                    ← Назад к сделкам
-                </a>
-            </div>
-        </div>
-    </nav>
-
     <div class="container pb-5">
         <h1 class="h3 mb-4">{{ title }}</h1>
 

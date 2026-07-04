@@ -6,23 +6,6 @@
 {% block content %}
 <div class="bg-light min-vh-100">
 
-    <nav class="navbar navbar-light bg-white border-bottom mb-4">
-        <div class="container-fluid px-4">
-            <span class="navbar-brand">
-                {% if agency %}{{ agency.name }}{% else %}CRM{% endif %}
-            </span>
-            <div class="d-flex align-items-center gap-3">
-                <a href="{% url 'properties:list' %}" class="btn btn-outline-secondary btn-sm">Объекты</a>
-                <a href="{% url 'contacts:list' %}" class="btn btn-outline-secondary btn-sm">Контакты</a>
-                <span class="text-muted small">{{ request.user.get_full_name|default:request.user.username }}</span>
-                <form method="post" action="{% url 'accounts:logout' %}" class="d-inline">
-                    {% csrf_token %}
-                    <button type="submit" class="btn btn-outline-secondary btn-sm">Выйти</button>
-                </form>
-            </div>
-        </div>
-    </nav>
-
     <div class="container-fluid px-4">
 
         <div class="d-flex justify-content-between align-items-center mb-4">

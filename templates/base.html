@@ -6,20 +6,66 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}CRM{% endblock %} — {% if agency %}{{ agency.name }}{% else %}Агентство недвижимости{% endif %}</title>
 
-    <!-- Bootstrap 5 (локальный, без CDN) -->
     <link rel="stylesheet" href="{% static 'vendor/bootstrap/css/bootstrap.min.css' %}">
+
+    {# Общие стили CRM #}
+    <style>
+        body { font-size: 0.925rem; }
+
+        /* Навбар */
+        .navbar-dark .nav-link { color: rgba(255,255,255,.75); }
+        .navbar-dark .nav-link:hover,
+        .navbar-dark .nav-link.active { color: #fff; }
+
+        /* Карточки объектов */
+        .property-card { transition: transform 0.15s, box-shadow 0.15s; }
+        .property-card:hover { transform: translateY(-2px); box-shadow: 0 4px 20px rgba(0,0,0,.1) !important; }
+
+        /* Таблицы на мобильных */
+        @media (max-width: 768px) {
+            .table-responsive-card thead { display: none; }
+            .table-responsive-card tr {
+                display: block;
+                margin-bottom: 1rem;
+                border: 1px solid #dee2e6;
+                border-radius: 8px;
+                padding: 0.75rem;
+            }
+            .table-responsive-card td {
+                display: flex;
+                justify-content: space-between;
+                border: none;
+                padding: 0.25rem 0;
+            }
+            .table-responsive-card td::before {
+                content: attr(data-label);
+                font-weight: 600;
+                color: #6c757d;
+                margin-right: 1rem;
+            }
+        }
+
+        /* Фиксированная высота для галереи фото */
+        .img-cover { object-fit: cover; width: 100%; }
+
+        /* Мобильные кнопки действий */
+        @media (max-width: 576px) {
+            .btn-mobile-full { width: 100%; margin-bottom: 0.5rem; }
+        }
+    </style>
 
     {% block extra_css %}{% endblock %}
 </head>
-<body>
+<body class="bg-light">
 
-    {% block content %}
-    {% endblock %}
+    {# Навбар только для авторизованных пользователей CRM #}
+    {% if request.user.is_authenticated and request.resolver_match.namespace != 'public' and request.resolver_match.namespace != 'selection_public' %}
+        {% include 'crm/_navbar.html' %}
+    {% endif %}
 
-    <!-- Bootstrap JS (bundle включает Popper.js) -->
+    {% block content %}{% endblock %}
+
     <script src="{% static 'vendor/bootstrap/js/bootstrap.bundle.min.js' %}"></script>
-
-    <!-- HTMX — для частичных обновлений страниц без перезагрузки -->
     <script src="{% static 'vendor/htmx/htmx.min.js' %}"></script>
 
     {% block extra_js %}{% endblock %}

@@ -6,21 +6,6 @@
 {% block content %}
 <div class="bg-light min-vh-100">
 
-    {# ── Навбар ──────────────────────────────────────────────────────────── #}
-    <nav class="navbar navbar-light bg-white border-bottom mb-4">
-        <div class="container-fluid px-4">
-            <span class="navbar-brand">
-                {% if agency %}{{ agency.name }}{% else %}CRM{% endif %}
-            </span>
-            <div class="d-flex align-items-center gap-3">
-                <span class="text-muted small">{{ request.user.get_full_name|default:request.user.username }}</span>
-                <form method="post" action="{% url 'accounts:logout' %}" class="d-inline">
-                    {% csrf_token %}
-                    <button type="submit" class="btn btn-outline-secondary btn-sm">Выйти</button>
-                </form>
-            </div>
-        </div>
-    </nav>
 
     <div class="container-fluid px-4">
 
@@ -74,89 +59,93 @@
         <div class="row g-3">
             {% for property in properties %}
             <div class="col-md-6 col-xl-4">
-                <div class="card h-100 border-0 shadow-sm">
+                <div class="card property-card h-100 border-0 shadow-sm">
 
-                    {# Обложка #}
-                    {% if property.cover_photo %}
-                    <img src="{{ property.cover_photo.image.url }}"
-                         class="card-img-top"
-                         style="height: 200px; object-fit: cover;"
-                         alt="">
-                    {% else %}
-                    <div class="bg-secondary-subtle d-flex align-items-center justify-content-center"
-                         style="height: 200px;">
-                        <span class="text-muted small">Нет фото</span>
+                    {# Обложка с бейджами #}
+                    <div class="position-relative">
+                        {% if property.cover_photo %}
+                        <img src="{{ property.cover_photo.image.url }}"
+                            class="card-img-top img-cover"
+                            style="height: 200px;"
+                            alt="">
+                        {% else %}
+                        <div class="bg-secondary-subtle d-flex align-items-center justify-content-center"
+                            style="height: 200px;">
+                            <span class="text-muted small">Нет фото</span>
+                        </div>
+                        {% endif %}
+
+                        {# Бейдж статуса поверх фото #}
+                        <span class="position-absolute top-0 start-0 m-2 badge
+                            {% if property.status == 'active' %}bg-success
+                            {% elif property.status == 'reserved' %}bg-warning text-dark
+                            {% elif property.status == 'sold' %}bg-secondary
+                            {% elif property.status == 'draft' %}bg-dark
+                            {% else %}bg-secondary{% endif %}">
+                            {{ property.get_status_display }}
+                        </span>
+
+                        {% if property.is_exclusive %}
+                        <span class="position-absolute top-0 end-0 m-2 badge bg-danger">
+                            Эксклюзив
+                        </span>
+                        {% endif %}
                     </div>
-                    {% endif %}
 
-                    <div class="card-body">
-
-                        {# Статус и тип сделки #}
-                        <div class="d-flex justify-content-between align-items-start mb-2">
-                            <span class="badge
-                                {% if property.status == 'active' %}bg-success
-                                {% elif property.status == 'reserved' %}bg-warning text-dark
-                                {% elif property.status == 'sold' %}bg-secondary
-                                {% elif property.status == 'draft' %}bg-light text-dark border
-                                {% else %}bg-secondary{% endif %}">
-                                {{ property.get_status_display }}
-                            </span>
-                            <span class="text-muted small">
-                                {{ property.get_deal_type_display }}
-                            </span>
+                    <div class="card-body pb-2">
+                        {# Тип сделки #}
+                        <div class="text-muted small mb-1">
+                            {{ property.get_deal_type_display }} · {{ property.get_property_type_display }}
                         </div>
 
-                        {# Тип объекта и площадь #}
-                        <h5 class="card-title mb-1" style="font-size: 1rem;">
-                            {{ property.get_property_type_display }}
-                            {% if property.rooms_count %}
-                                {{ property.rooms_count }}-комн.
-                            {% endif %}
-                            {% if property.area_total %}
-                                {{ property.area_total }} м²
+                        {# Основные характеристики #}
+                        <h5 class="card-title mb-1" style="font-size: 1rem; line-height: 1.3;">
+                            {% if property.rooms_count %}{{ property.rooms_count }}-комн.{% endif %}
+                            {% if property.area_total %}{{ property.area_total }} м²{% endif %}
+                            {% if property.floor and property.floors_total %}
+                            · {{ property.floor }}/{{ property.floors_total }} эт.
                             {% endif %}
                         </h5>
 
                         {# Адрес #}
                         <p class="text-muted small mb-2">
-                            {{ property.city }}{% if property.street %}, {{ property.street }}{% endif %}{% if property.building %}, {{ property.building }}{% endif %}
+                            📍 {{ property.city }}{% if property.street %}, {{ property.street }}{% endif %}{% if property.building %}, {{ property.building }}{% endif %}
                         </p>
 
                         {# Цена #}
-                        <p class="fw-bold text-primary mb-3">
+                        <p class="fw-bold text-primary mb-1" style="font-size: 1.1rem;">
                             {{ property.price|intcomma }} ₽
-                            {% if property.price_per_sqm %}
-                            <span class="text-muted fw-normal small">
-                                · {{ property.price_per_sqm|intcomma }} ₽/м²
-                            </span>
-                            {% endif %}
                         </p>
-
-                        {# Ответственный риелтор #}
-                        {% if property.agent %}
-                        <p class="text-muted small mb-0">
-                            Риелтор: {{ property.agent.get_full_name|default:property.agent.username }}
-                        </p>
+                        {% if property.price_per_sqm %}
+                        <p class="text-muted small mb-2">{{ property.price_per_sqm|intcomma }} ₽/м²</p>
                         {% endif %}
 
+                        {# Агент #}
+                        {% if property.agent %}
+                        <p class="text-muted small mb-0">
+                            👤 {{ property.agent.get_full_name|default:property.agent.username }}
+                        </p>
+                        {% endif %}
                     </div>
 
                     {# Кнопки действий #}
-                    <div class="card-footer bg-white border-top d-flex gap-2 pt-3">
-                        <a href="{% url 'properties:edit' property.pk %}"
-                        class="btn btn-outline-secondary btn-sm flex-grow-1">
-                            Изменить
-                        </a>
-                        {% if property.is_published %}
-                        <button class="btn btn-outline-primary btn-sm flex-grow-1"
-                                onclick="copyLink('{{ request.scheme }}://{{ request.get_host }}{{ property.get_public_url }}')">
-                            Скопировать ссылку
-                        </button>
-                        {% else %}
-                        <span class="btn btn-outline-secondary btn-sm flex-grow-1 disabled">
-                            Не опубликован
-                        </span>
-                        {% endif %}
+                    <div class="card-footer bg-white border-top-0 pt-0 pb-3 px-3">
+                        <div class="d-flex gap-2">
+                            <a href="{% url 'properties:edit' property.pk %}"
+                            class="btn btn-outline-secondary btn-sm flex-grow-1">
+                                ✏️ Изменить
+                            </a>
+                            {% if property.is_published %}
+                            <button class="btn btn-outline-primary btn-sm flex-grow-1"
+                                    onclick="copyLink('{{ request.scheme }}://{{ request.get_host }}{{ property.get_public_url }}')">
+                                🔗 Ссылка
+                            </button>
+                            {% else %}
+                            <span class="btn btn-outline-secondary btn-sm flex-grow-1 disabled">
+                                Не опубликован
+                            </span>
+                            {% endif %}
+                        </div>
                     </div>
 
                 </div>
