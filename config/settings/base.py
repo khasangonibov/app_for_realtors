@@ -6,6 +6,10 @@
 import environ
 from pathlib import Path
 
+
+from celery.schedules import crontab
+
+
 # ─── Пути ────────────────────────────────────────────────────────────────────
 # BASE_DIR указывает на корень проекта (папку realestate_crm/)
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
@@ -57,7 +61,7 @@ LOCAL_APPS = [
     'apps.selections',   # подборки для клиентов
     'apps.tasks',        # задачи и напоминания
     'apps.analytics',    # отчёты и аналитика
-    # 'apps.notifications',# уведомления
+    'apps.notifications',# уведомления
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
@@ -231,3 +235,14 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # Максимальный размер загружаемого файла — 50MB
 DATA_UPLOAD_MAX_MEMORY_SIZE = 52428800
 FILE_UPLOAD_MAX_MEMORY_SIZE = 52428800
+
+
+# Для notifications
+CELERY_BEAT_SCHEDULE = {
+    # Каждый день в 9:00 по московскому времени
+    'send-overdue-tasks-daily': {
+        'task': 'notifications.send_overdue_tasks_notifications',
+        'schedule': crontab(hour=9, minute=0),
+    },
+}
+

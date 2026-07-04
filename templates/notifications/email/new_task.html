@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head><meta charset="UTF-8"></head>
+<body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+
+    <div style="background: #0d6efd; color: white; padding: 20px; border-radius: 8px 8px 0 0;">
+        <h1 style="margin: 0; font-size: 20px;">Новая задача</h1>
+    </div>
+
+    <div style="background: #f8f9fa; padding: 20px; border: 1px solid #dee2e6;">
+        <p>Здравствуйте, <strong>{{ task.agent.first_name }}</strong>!</p>
+        <p>Вам назначена новая задача:</p>
+
+        <div style="background: white; padding: 16px; border-radius: 8px; border-left: 4px solid #0d6efd; margin: 16px 0;">
+            <h2 style="margin: 0 0 8px; font-size: 18px;">{{ task.title }}</h2>
+            <p style="margin: 4px 0; color: #6c757d;">
+                Тип: {{ task.get_task_type_display }}
+            </p>
+            <p style="margin: 4px 0; color: #6c757d;">
+                Приоритет: {{ task.get_priority_display }}
+            </p>
+            <p style="margin: 4px 0; color: {% if task.is_overdue %}#dc3545{% else %}#6c757d{% endif %};">
+                Срок: {{ task.due_date|date:"d.m.Y H:i" }}
+            </p>
+            {% if task.contact %}
+            <p style="margin: 4px 0; color: #6c757d;">
+                Контакт: {{ task.contact.full_name }} ({{ task.contact.phone }})
+            </p>
+            {% endif %}
+            {% if task.description %}
+            <p style="margin: 12px 0 0; border-top: 1px solid #dee2e6; padding-top: 12px;">
+                {{ task.description }}
+            </p>
+            {% endif %}
+        </div>
+
+        <p style="color: #6c757d; font-size: 14px;">
+            Войдите в CRM чтобы просмотреть детали задачи.
+        </p>
+    </div>
+
+    <div style="background: #e9ecef; padding: 12px 20px; border-radius: 0 0 8px 8px; font-size: 12px; color: #6c757d;">
+        Это автоматическое уведомление от CRM системы.
+    </div>
+
+</body>
+</html>

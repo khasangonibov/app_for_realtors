@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head><meta charset="UTF-8"></head>
+<body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+
+    <div style="background: #ffc107; color: #212529; padding: 20px; border-radius: 8px 8px 0 0;">
+        <h1 style="margin: 0; font-size: 20px;">🤝 Новая сделка</h1>
+    </div>
+
+    <div style="background: #f8f9fa; padding: 20px; border: 1px solid #dee2e6;">
+        <p>Здравствуйте, <strong>{{ manager.first_name }}</strong>!</p>
+        <p>В агентстве создана новая сделка:</p>
+
+        <div style="background: white; padding: 16px; border-radius: 8px; margin: 16px 0;">
+            {% if deal.property %}
+            <p style="margin: 4px 0;">
+                <strong>Объект:</strong> {{ deal.property }}
+            </p>
+            {% endif %}
+            <p style="margin: 4px 0;">
+                <strong>Стадия:</strong> {{ deal.get_stage_display }}
+            </p>
+            {% if deal.price_agreed %}
+            <p style="margin: 4px 0;">
+                <strong>Сумма:</strong> {{ deal.price_agreed }} ₽
+            </p>
+            {% endif %}
+            {% if deal.buyer_contact %}
+            <p style="margin: 4px 0;">
+                <strong>Покупатель:</strong> {{ deal.buyer_contact.full_name }}
+            </p>
+            {% endif %}
+            {% if deal.agent %}
+            <p style="margin: 4px 0;">
+                <strong>Риелтор:</strong> {{ deal.agent.get_full_name }}
+            </p>
+            {% endif %}
+        </div>
+
+        <p style="color: #6c757d; font-size: 14px;">
+            Войдите в CRM чтобы просмотреть детали сделки.
+        </p>
+    </div>
+
+    <div style="background: #e9ecef; padding: 12px 20px; border-radius: 0 0 8px 8px; font-size: 12px; color: #6c757d;">
+        Это автоматическое уведомление от CRM системы.
+    </div>
+
+</body>
+</html>

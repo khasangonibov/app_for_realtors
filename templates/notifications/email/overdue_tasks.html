@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head><meta charset="UTF-8"></head>
+<body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+
+    <div style="background: #dc3545; color: white; padding: 20px; border-radius: 8px 8px 0 0;">
+        <h1 style="margin: 0; font-size: 20px;">
+            ⚠ Просроченные задачи ({{ tasks|length }})
+        </h1>
+    </div>
+
+    <div style="background: #f8f9fa; padding: 20px; border: 1px solid #dee2e6;">
+        <p>Здравствуйте, <strong>{{ agent.first_name }}</strong>!</p>
+        <p>У вас есть просроченные задачи которые требуют внимания:</p>
+
+        {% for task in tasks %}
+        <div style="background: white; padding: 16px; border-radius: 8px; border-left: 4px solid #dc3545; margin: 12px 0;">
+            <h3 style="margin: 0 0 8px; font-size: 16px;">{{ task.title }}</h3>
+            <p style="margin: 4px 0; color: #dc3545; font-size: 14px;">
+                Срок был: {{ task.due_date|date:"d.m.Y H:i" }}
+            </p>
+            {% if task.contact %}
+            <p style="margin: 4px 0; color: #6c757d; font-size: 14px;">
+                Контакт: {{ task.contact.full_name }}
+            </p>
+            {% endif %}
+        </div>
+        {% endfor %}
+
+        <p style="color: #6c757d; font-size: 14px; margin-top: 16px;">
+            Войдите в CRM чтобы обновить статус задач.
+        </p>
+    </div>
+
+    <div style="background: #e9ecef; padding: 12px 20px; border-radius: 0 0 8px 8px; font-size: 12px; color: #6c757d;">
+        Это автоматическое уведомление. Отправляется ежедневно в 9:00.
+    </div>
+
+</body>
+</html>

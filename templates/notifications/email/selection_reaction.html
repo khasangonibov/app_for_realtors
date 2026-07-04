@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head><meta charset="UTF-8"></head>
+<body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+
+    <div style="background: #198754; color: white; padding: 20px; border-radius: 8px 8px 0 0;">
+        <h1 style="margin: 0; font-size: 20px;">Клиент оценил объект</h1>
+    </div>
+
+    <div style="background: #f8f9fa; padding: 20px; border: 1px solid #dee2e6;">
+        <p>Клиент оставил реакцию на объект в подборке <strong>«{{ selection.title }}»</strong>:</p>
+
+        <div style="background: white; padding: 16px; border-radius: 8px; margin: 16px 0;">
+            <p style="margin: 4px 0;">
+                <strong>Объект:</strong> {{ item.property }}
+            </p>
+            <p style="margin: 4px 0;">
+                <strong>Реакция:</strong>
+                {% if item.client_status == 'liked' %}
+                    👍 Нравится
+                {% elif item.client_status == 'maybe' %}
+                    🤔 Возможно
+                {% elif item.client_status == 'rejected' %}
+                    👎 Не нравится
+                {% endif %}
+            </p>
+            {% if contact %}
+            <p style="margin: 4px 0;">
+                <strong>Клиент:</strong> {{ contact.full_name }} ({{ contact.phone }})
+            </p>
+            {% endif %}
+        </div>
+
+        <p style="color: #6c757d; font-size: 14px;">
+            Войдите в CRM чтобы посмотреть все реакции клиента.
+        </p>
+    </div>
+
+    <div style="background: #e9ecef; padding: 12px 20px; border-radius: 0 0 8px 8px; font-size: 12px; color: #6c757d;">
+        Это автоматическое уведомление от CRM системы.
+    </div>
+
+</body>
+</html>
