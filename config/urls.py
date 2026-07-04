@@ -35,13 +35,16 @@ urlpatterns = [
     ])),
 
     # ── REST API ───────────────────────────────────────────────────────────────
-    # path('api/v1/', include([
-    #     path('', include('apps.accounts.api_urls')),
-    #     path('', include('apps.properties.api_urls')),
-    #     path('', include('apps.contacts.api_urls')),
-    #     path('', include('apps.deals.api_urls')),
-    #     path('', include('apps.selections.api_urls')),
-    # ])),
+    path('api/v1/', include([
+        path('', include('apps.accounts.api_urls')),
+        path('', include('apps.properties.api_urls')),
+        path('', include('apps.contacts.api_urls')),
+        path('', include('apps.deals.api_urls')),
+        path('', include('apps.tasks.api_urls')),
+        path('', include('apps.selections.api_urls')),  # ← раскомментировали
+    ])),
+    # DRF browsable API — кнопка Log in в браузере
+    path('api-auth/', include('rest_framework.urls')),
 ]
 
 # ── В разработке отдаём медиафайлы через Django ───────────────────────────────
