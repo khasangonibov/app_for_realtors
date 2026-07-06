@@ -4,6 +4,10 @@ from django.contrib import messages
 from apps.accounts.decorators import crm_required
 from .models import Deal
 from .forms import DealForm
+from apps.core.exports import (
+    create_excel_response, style_header_row, finalize_excel
+)
+
 
 
 @crm_required
@@ -86,3 +90,52 @@ def deal_edit(request, pk):
         'title': f'Редактировать сделку',
         'submit_label': 'Сохранить',
     })
+    
+
+@crm_required
+def deal_export_excel(request):
+    """Экспорт сделок в Excel."""
+    queryset = Deal.objects.filter(
+        agency=request.user.agency
+    ).select_related('property', 'buyer_contact', 'seller_contact', 'agent')
+
+    if request.user.is_agent:
+        queryset = queryset.filter(agent=request.user)
+
+    from datetime import datetime
+    filename = f"deals_{datetime.now().strftime('%Y%m%d_%H%M')}.xlsx"
+    wb, ws, response = create_excel_response(filename)
+
+    ws.title = 'Сделки'
+
+    headers = [
+        '№', 'Стадия', 'Объект', 'Город',
+        'Покупатель', 'Телефон покупателя',
+        'Продавец', 'Риелтор',
+        'Согласованная цена, ₽', 'Комиссия, ₽',
+        'Задаток, ₽', 'Дата задатка',
+        'Дата договора', 'Дата закрытия',
+        'Дата создания',
+    ]
+    style_header_row(ws, headers)
+
+    for i, deal in enumerate(queryset, 1):
+        ws.append([
+            i,
+            deal.get_stage_display(),
+            str(deal.property) if deal.property else '',
+            deal.property.city if deal.property else '',
+            deal.buyer_contact.full_name if deal.buyer_contact else '',
+            deal.buyer_contact.phone if deal.buyer_contact else '',
+            deal.seller_contact.full_name if deal.seller_contact else '',
+            deal.agent.get_full_name() if deal.agent else '',
+            float(deal.price_agreed) if deal.price_agreed else '',
+            float(deal.commission_total) if deal.commission_total else '',
+            float(deal.deposit_amount) if deal.deposit_amount else '',
+            deal.deposit_date.strftime('%d.%m.%Y') if deal.deposit_date else '',
+            deal.contract_date.strftime('%d.%m.%Y') if deal.contract_date else '',
+            deal.close_date.strftime('%d.%m.%Y') if deal.close_date else '',
+            deal.created_at.strftime('%d.%m.%Y') if deal.created_at else '',
+        ])
+
+    return finalize_excel(wb, ws, response, start_row=2, col_count=len(headers))

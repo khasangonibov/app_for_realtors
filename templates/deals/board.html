@@ -8,14 +8,20 @@
 
     <div class="container-fluid px-4">
 
-        <div class="d-flex justify-content-between align-items-center mb-4">
+       <div class="d-flex justify-content-between align-items-center mb-4">
             <div>
                 <h1 class="h3 mb-0">Сделки</h1>
                 <span class="text-muted small">Всего: {{ total_count }}</span>
             </div>
-            <a href="{% url 'deals:create' %}" class="btn btn-primary">
-                + Новая сделка
-            </a>
+            <div class="d-flex gap-2">
+                <a href="{% url 'deals:export' %}"
+                class="btn btn-outline-success btn-sm">
+                    📥 Экспорт в Excel
+                </a>
+                <a href="{% url 'deals:create' %}" class="btn btn-primary">
+                    + Новая сделка
+                </a>
+            </div>
         </div>
 
         {# ── Kanban-доска ────────────────────────────────────────────────── #}

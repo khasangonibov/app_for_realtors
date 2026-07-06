@@ -13,9 +13,15 @@
                 <h1 class="h3 mb-0">Контакты</h1>
                 <span class="text-muted small">Найдено: {{ total_count }}</span>
             </div>
-            <a href="{% url 'contacts:create' %}" class="btn btn-primary">
-                + Добавить контакт
-            </a>
+            <div class="d-flex gap-2">
+                <a href="{% url 'contacts:export' %}{% if request.GET %}?{{ request.GET.urlencode }}{% endif %}"
+                class="btn btn-outline-success btn-sm">
+                    📥 Экспорт в Excel
+                </a>
+                <a href="{% url 'contacts:create' %}" class="btn btn-primary">
+                    + Добавить контакт
+                </a>
+            </div>
         </div>
 
         {# Фильтры #}

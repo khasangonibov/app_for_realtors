@@ -15,9 +15,15 @@
                 <h1 class="h3 mb-0">Объекты</h1>
                 <span class="text-muted small">Найдено: {{ total_count }}</span>
             </div>
-            <a href="{% url 'properties:create' %}" class="btn btn-primary">
-                + Добавить объект
-            </a>
+            <div class="d-flex gap-2">
+                <a href="{% url 'properties:export' %}{% if request.GET %}?{{ request.GET.urlencode }}{% endif %}"
+                class="btn btn-outline-success btn-sm">
+                    📥 Экспорт в Excel
+                </a>
+                <a href="{% url 'properties:create' %}" class="btn btn-primary">
+                    + Добавить объект
+                </a>
+            </div>
         </div>
 
         {# ── Фильтры ─────────────────────────────────────────────────────── #}

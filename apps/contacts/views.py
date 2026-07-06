@@ -5,6 +5,9 @@ from django.db.models import Q
 from apps.accounts.decorators import crm_required
 from .models import Contact, ContactActivity
 from .forms import ContactForm, ActivityForm
+from apps.core.exports import (
+    create_excel_response, style_header_row, finalize_excel
+)
 
 
 @crm_required
@@ -121,3 +124,52 @@ def contact_edit(request, pk):
         'title': f'Редактировать: {contact.full_name}',
         'submit_label': 'Сохранить',
     })
+    
+@crm_required
+def contact_export_excel(request):
+    """Экспорт контактов в Excel."""
+    queryset = Contact.objects.filter(
+        agency=request.user.agency
+    ).select_related('agent')
+
+    if request.user.is_agent:
+        queryset = queryset.filter(agent=request.user)
+
+    status = request.GET.get('status')
+    if status:
+        queryset = queryset.filter(status=status)
+
+    from datetime import datetime
+    filename = f"contacts_{datetime.now().strftime('%Y%m%d_%H%M')}.xlsx"
+    wb, ws, response = create_excel_response(filename)
+
+    ws.title = 'Контакты'
+
+    headers = [
+        '№', 'Фамилия', 'Имя', 'Отчество',
+        'Телефон', 'Email',
+        'Тип', 'Статус', 'Источник',
+        'Бюджет от, ₽', 'Бюджет до, ₽',
+        'Заметки', 'Риелтор', 'Дата добавления',
+    ]
+    style_header_row(ws, headers)
+
+    for i, contact in enumerate(queryset, 1):
+        ws.append([
+            i,
+            contact.last_name or '',
+            contact.first_name,
+            contact.middle_name or '',
+            contact.phone,
+            contact.email or '',
+            contact.get_contact_type_display(),
+            contact.get_status_display(),
+            contact.get_source_display(),
+            float(contact.budget_min) if contact.budget_min else '',
+            float(contact.budget_max) if contact.budget_max else '',
+            contact.notes or '',
+            contact.agent.get_full_name() if contact.agent else '',
+            contact.created_at.strftime('%d.%m.%Y') if contact.created_at else '',
+        ])
+
+    return finalize_excel(wb, ws, response, start_row=2, col_count=len(headers))

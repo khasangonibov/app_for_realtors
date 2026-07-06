@@ -12,6 +12,10 @@ from django.views.decorators.http import require_POST
 from apps.properties.models import Property, PropertyPhoto
 from apps.properties.forms import PropertyFilterForm, PropertyForm
 from apps.accounts.decorators import crm_required
+from apps.core.exports import (
+    create_excel_response, style_header_row, finalize_excel
+)
+
 
 @crm_required
 def property_list(request):
@@ -179,3 +183,80 @@ def photo_set_cover(request, pk, photo_pk):
     photo.is_cover = True
     photo.save(update_fields=['is_cover'])
     return JsonResponse({'status': 'ok'})
+
+
+from apps.core.exports import (
+    create_excel_response, style_header_row, finalize_excel
+)
+
+
+@crm_required
+def property_export_excel(request):
+    """Экспорт объектов недвижимости в Excel."""
+    # Берём тот же queryset что и в списке
+    queryset = Property.objects.filter(
+        agency=request.user.agency
+    ).select_related('agent')
+
+    if request.user.is_agent:
+        queryset = queryset.filter(agent=request.user)
+
+    # Применяем фильтры если есть
+    status = request.GET.get('status')
+    deal_type = request.GET.get('deal_type')
+    city = request.GET.get('city')
+
+    if status:
+        queryset = queryset.filter(status=status)
+    if deal_type:
+        queryset = queryset.filter(deal_type=deal_type)
+    if city:
+        queryset = queryset.filter(city__icontains=city)
+
+    from datetime import datetime
+    filename = f"objects_{datetime.now().strftime('%Y%m%d_%H%M')}.xlsx"
+    wb, ws, response = create_excel_response(filename)
+
+    ws.title = 'Объекты недвижимости'
+
+    # Заголовки
+    headers = [
+        '№', 'Тип сделки', 'Тип объекта', 'Статус',
+        'Город', 'Район', 'Улица', 'Дом',
+        'Комнат', 'Площадь общ.', 'Площадь жил.', 'Площадь кухни',
+        'Этаж', 'Этажей в доме',
+        'Цена, ₽', 'Цена за м², ₽',
+        'Комиссия, %', 'Комиссия фикс., ₽',
+        'Опубликован', 'Эксклюзив',
+        'Риелтор', 'Дата создания',
+    ]
+    style_header_row(ws, headers)
+
+    # Данные
+    for i, prop in enumerate(queryset, 1):
+        ws.append([
+            i,
+            prop.get_deal_type_display(),
+            prop.get_property_type_display(),
+            prop.get_status_display(),
+            prop.city,
+            prop.district or '',
+            prop.street or '',
+            prop.building or '',
+            prop.rooms_count or '',
+            float(prop.area_total) if prop.area_total else '',
+            float(prop.area_living) if prop.area_living else '',
+            float(prop.area_kitchen) if prop.area_kitchen else '',
+            prop.floor or '',
+            prop.floors_total or '',
+            float(prop.price),
+            float(prop.price_per_sqm) if prop.price_per_sqm else '',
+            float(prop.commission_percent) if prop.commission_percent else '',
+            float(prop.commission_fixed) if prop.commission_fixed else '',
+            'Да' if prop.is_published else 'Нет',
+            'Да' if prop.is_exclusive else 'Нет',
+            prop.agent.get_full_name() if prop.agent else '',
+            prop.created_at.strftime('%d.%m.%Y') if prop.created_at else '',
+        ])
+
+    return finalize_excel(wb, ws, response, start_row=2, col_count=len(headers))
