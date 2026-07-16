@@ -1,0 +1,59 @@
+{% if page_obj.has_other_pages %}
+<nav class="mt-4">
+    <ul class="pagination justify-content-center">
+
+        {# Первая страница #}
+        {% if page_obj.has_previous %}
+        <li class="page-item">
+            <a class="page-link"
+               href="?{% if request.GET %}{{ request.GET.urlencode }}&{% endif %}page=1">
+                «
+            </a>
+        </li>
+        <li class="page-item">
+            <a class="page-link"
+               href="?{% if request.GET %}{{ request.GET.urlencode }}&{% endif %}page={{ page_obj.previous_page_number }}">
+                ‹
+            </a>
+        </li>
+        {% endif %}
+
+        {# Номера страниц #}
+        {% for num in page_obj.paginator.page_range %}
+            {% if page_obj.number == num %}
+            <li class="page-item active">
+                <span class="page-link">{{ num }}</span>
+            </li>
+            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+            <li class="page-item">
+                <a class="page-link"
+                   href="?{% if request.GET %}{{ request.GET.urlencode }}&{% endif %}page={{ num }}">
+                    {{ num }}
+                </a>
+            </li>
+            {% endif %}
+        {% endfor %}
+
+        {# Последняя страница #}
+        {% if page_obj.has_next %}
+        <li class="page-item">
+            <a class="page-link"
+               href="?{% if request.GET %}{{ request.GET.urlencode }}&{% endif %}page={{ page_obj.next_page_number }}">
+                ›
+            </a>
+        </li>
+        <li class="page-item">
+            <a class="page-link"
+               href="?{% if request.GET %}{{ request.GET.urlencode }}&{% endif %}page={{ page_obj.paginator.num_pages }}">
+                »
+            </a>
+        </li>
+        {% endif %}
+
+    </ul>
+    <p class="text-center text-muted small">
+        Страница {{ page_obj.number }} из {{ page_obj.paginator.num_pages }}
+        (всего {{ total_count }})
+    </p>
+</nav>
+{% endif %}

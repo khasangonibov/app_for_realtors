@@ -1,0 +1,132 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Каталог недвижимости{% endblock %}</title>
+
+    <link rel="stylesheet" href="{% static 'vendor/bootstrap/css/bootstrap.min.css' %}">
+    <link rel="stylesheet" href="{% static 'vendor/leaflet/leaflet.css' %}">
+
+    <style>
+        body { background: #f8f9fa; }
+
+        .public-navbar {
+            background: #1a1a2e;
+            padding: 1rem 0;
+        }
+
+        .public-navbar .brand {
+            color: white;
+            font-size: 1.3rem;
+            font-weight: 700;
+            text-decoration: none;
+        }
+
+        .public-navbar .nav-link {
+            color: rgba(255,255,255,.8);
+        }
+
+        .public-navbar .nav-link:hover {
+            color: white;
+        }
+
+        .hero {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            color: white;
+            padding: 3rem 0;
+        }
+
+        .property-card {
+            transition: transform 0.2s, box-shadow 0.2s;
+            border: none;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .property-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 30px rgba(0,0,0,.12) !important;
+        }
+
+        .filter-panel {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 12px rgba(0,0,0,.06);
+        }
+
+        .footer {
+            background: #1a1a2e;
+            color: rgba(255,255,255,.7);
+            padding: 2rem 0;
+            margin-top: 4rem;
+        }
+    </style>
+
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+
+    {# Публичный навбар #}
+    <nav class="public-navbar">
+        <div class="container d-flex justify-content-between align-items-center">
+            <a href="{% url 'public:catalog' %}" class="brand">
+                {% if agency %}{{ agency.name }}{% else %}Недвижимость{% endif %}
+            </a>
+            <div class="d-flex gap-3 align-items-center">
+                <a href="{% url 'public:catalog' %}" class="nav-link">Каталог</a>
+                {% if user.is_authenticated %}
+                    {% if user.role != 'client' %}
+                    <a href="{% url 'accounts:dashboard' %}"
+                       class="btn btn-outline-light btn-sm">
+                        CRM
+                    </a>
+                    {% else %}
+                    <a href="{% url 'public:profile' %}"
+                       class="nav-link">
+                        {{ user.get_full_name|default:user.username }}
+                    </a>
+                    {% endif %}
+                {% else %}
+                <a href="{% url 'public:register' %}"
+                   class="btn btn-outline-light btn-sm">
+                    Регистрация
+                </a>
+                <a href="{% url 'accounts:login' %}"
+                   class="btn btn-light btn-sm">
+                    Войти
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </nav>
+
+    {% block content %}{% endblock %}
+
+    {# Футер #}
+    <footer class="footer">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="fw-bold text-white mb-2">
+                        {% if agency %}{{ agency.name }}{% else %}Агентство недвижимости{% endif %}
+                    </div>
+                    {% if agency %}
+                    <div class="small">{{ agency.city }}</div>
+                    <div class="small">{{ agency.phone }}</div>
+                    <div class="small">{{ agency.email }}</div>
+                    {% endif %}
+                </div>
+                <div class="col-md-6 text-md-end">
+                    <div class="small">© {% now "Y" %} Все права защищены</div>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="{% static 'vendor/bootstrap/js/bootstrap.bundle.min.js' %}"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

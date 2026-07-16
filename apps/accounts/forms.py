@@ -85,3 +85,50 @@ class UserEditForm(forms.ModelForm):
             'email': 'Email',
             'phone': 'Телефон',
         }
+
+        
+class ClientRegisterForm(forms.ModelForm):
+    """Форма регистрации внешнего пользователя (клиента)."""
+    password1 = forms.CharField(
+        label='Пароль',
+        widget=forms.PasswordInput(attrs={'class': 'form-control'}),
+    )
+    password2 = forms.CharField(
+        label='Повторите пароль',
+        widget=forms.PasswordInput(attrs={'class': 'form-control'}),
+    )
+
+    class Meta:
+        model = User
+        fields = ['first_name', 'last_name', 'email', 'phone', 'username']
+        widgets = {
+            'first_name': forms.TextInput(attrs={'class': 'form-control'}),
+            'last_name': forms.TextInput(attrs={'class': 'form-control'}),
+            'email': forms.EmailInput(attrs={'class': 'form-control'}),
+            'phone': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': '+7 (999) 999-99-99',
+            }),
+            'username': forms.TextInput(attrs={'class': 'form-control'}),
+        }
+        labels = {
+            'first_name': 'Имя',
+            'last_name': 'Фамилия',
+            'email': 'Email',
+            'phone': 'Телефон',
+            'username': 'Логин',
+        }
+
+    def clean_password2(self):
+        p1 = self.cleaned_data.get('password1')
+        p2 = self.cleaned_data.get('password2')
+        if p1 and p2 and p1 != p2:
+            raise forms.ValidationError('Пароли не совпадают.')
+        return p2
+
+    def save(self, commit=True):
+        user = super().save(commit=False)
+        user.set_password(self.cleaned_data['password1'])
+        if commit:
+            user.save()
+        return user

@@ -18,8 +18,6 @@ urlpatterns = [
     path('admin/', admin.site.urls),
 
     # ── Публичные страницы (без авторизации) ──────────────────────────────────
-    # Карточка объекта: /object/{agency_slug}/{property_id}/{token}/
-    # Подборка для клиента: /selection/{token}/
     path('', include('apps.properties.urls.public', namespace='public')),
     path('', include('apps.selections.urls.public', namespace='selection_public')),
 

@@ -8,6 +8,7 @@ from django.contrib import messages
 from django.db.models import Q as models_Q
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
+from django.core.paginator import Paginator
 
 from apps.properties.models import Property, PropertyPhoto
 from apps.properties.forms import PropertyFilterForm, PropertyForm
@@ -19,28 +20,13 @@ from apps.core.exports import (
 
 @crm_required
 def property_list(request):
-    """Список объектов для риелтора.
-
-    Риелтор видит только объекты своего агентства.
-    Администратор/менеджер видит все объекты агентства.
-    Фильтрация через GET-параметры (?status=active&city=Москва).
-    """
-    # Базовый queryset — только объекты агентства текущего пользователя.
-    # Это главное правило мультитенантности: никто не видит чужие данные.
     queryset = Property.objects.filter(
         agency=request.user.agency
-    ).select_related(
-        'agent',   # загружаем агента одним JOIN, а не N отдельных запросов
-    ).prefetch_related(
-        'photos',  # фото тоже сразу, чтобы показать обложку в карточке
-    )
+    ).select_related('agent').prefetch_related('photos')
 
-    # Риелтор видит только свои объекты,
-    # менеджер и admin — все объекты агентства
     if request.user.is_agent:
         queryset = queryset.filter(agent=request.user)
 
-    # Применяем фильтры из GET-параметров
     form = PropertyFilterForm(request.GET)
     if form.is_valid():
         if form.cleaned_data.get('status'):
@@ -54,16 +40,23 @@ def property_list(request):
         if form.cleaned_data.get('search'):
             search = form.cleaned_data['search']
             queryset = queryset.filter(
-                # ищем по нескольким полям сразу через OR
-                models_Q(title__icontains=search) |
-                models_Q(street__icontains=search) |
-                models_Q(description__icontains=search)
+                Q(title__icontains=search) |
+                Q(street__icontains=search) |
+                Q(description__icontains=search)
             )
 
+    total_count = queryset.count()
+
+    # Пагинация — 12 объектов на страницу (кратно 3 колонкам)
+    paginator = Paginator(queryset, 12)
+    page_number = request.GET.get('page', 1)
+    page_obj = paginator.get_page(page_number)
+
     return render(request, 'properties/crm/list.html', {
-        'properties': queryset,
+        'properties': page_obj,
+        'page_obj': page_obj,
         'form': form,
-        'total_count': queryset.count(),
+        'total_count': total_count,
     })
     
 @crm_required

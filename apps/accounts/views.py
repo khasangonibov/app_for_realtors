@@ -1,4 +1,4 @@
-from django.contrib.auth import views as auth_views
+from django.contrib.auth import login, views as auth_views
 from django.contrib import messages
 from django.shortcuts import render, get_object_or_404, redirect
 from django.utils import timezone
@@ -208,3 +208,90 @@ def user_reset_password(request, pk):
             f'Новый пароль для {user.get_full_name()}: {temp_password}'
         )
     return redirect('accounts:users_list')
+
+
+
+def client_register(request):
+    """Регистрация внешнего пользователя (клиента)."""
+    from .forms import ClientRegisterForm
+
+    if request.user.is_authenticated:
+        return redirect('public:catalog')
+
+    if request.method == 'POST':
+        form = ClientRegisterForm(request.POST)
+        if form.is_valid():
+            user = form.save()
+
+            # Создаём профиль с ролью CLIENT
+            UserProfile.objects.create(
+                user=user,
+                role=UserProfile.Role.CLIENT,
+            )
+
+            # Автоматически создаём Contact во всех агентствах
+            # чтобы риелторы могли найти клиента и привязать подборку
+            # Берём первое активное агентство (или можно выбирать конкретное)
+            from apps.contacts.models import Contact
+            from apps.accounts.models import Agency
+
+            # Создаём контакт без привязки к конкретному агентству —
+            # риелтор сам найдёт по email и привяжет к своему агентству
+            # Либо создаём в агентстве которое указано в запросе (если сайт одного агентства)
+            agency = Agency.objects.first()  # для одноагентской системы
+            if agency:
+                Contact.objects.get_or_create(
+                    email=user.email,
+                    agency=agency,
+                    defaults={
+                        'first_name': user.first_name or user.username,
+                        'last_name': user.last_name or '',
+                        'phone': user.phone or '',
+                        'contact_type': Contact.ContactType.BUYER,
+                        'status': Contact.Status.NEW,
+                        'source': Contact.Source.SITE,
+                        'notes': 'Зарегистрировался через публичный сайт.',
+                    }
+                )
+
+            login(request, user)
+            messages.success(
+                request,
+                f'Добро пожаловать, {user.first_name}! '
+                f'Вы успешно зарегистрировались.'
+            )
+            return redirect('public:profile')
+
+def client_profile(request):
+    """Личный кабинет клиента — список его подборок."""
+    if not request.user.is_authenticated:
+        return redirect('accounts:login')
+
+    from apps.selections.models import Selection
+
+    # Подборки привязанные к контакту этого пользователя
+    # Ищем контакт по email пользователя
+    from apps.contacts.models import Contact
+    contacts = Contact.objects.filter(email=request.user.email)
+
+    selections = Selection.objects.filter(
+        contact__in=contacts
+    ).prefetch_related('items__property').order_by('-created_at')
+
+    return render(request, 'public/profile.html', {
+        'selections': selections,
+        'contacts': contacts,
+    })
+
+
+class PublicLoginView(auth_views.LoginView):
+    """Логин для публичной части — клиенты."""
+    template_name = 'public/login.html'
+    redirect_authenticated_user = True
+
+    def get_success_url(self):
+        user = self.request.user
+        # Если роль не CLIENT — редиректим в CRM
+        if user.role != UserProfile.Role.CLIENT:
+            return '/crm/'
+        return '/profile/'

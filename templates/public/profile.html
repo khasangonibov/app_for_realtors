@@ -1,0 +1,172 @@
+{% extends "public_base.html" %}
+{% load humanize %}
+
+{% block title %}Личный кабинет{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+
+    <div class="row g-4">
+
+        {# ── Левая колонка — данные профиля ─────────────────────────────── #}
+        <div class="col-lg-3">
+            <div class="card border-0 shadow-sm rounded-3 p-4">
+                <div class="text-center mb-3">
+                    <div class="rounded-circle bg-primary d-flex align-items-center
+                                justify-content-center mx-auto mb-3"
+                         style="width: 64px; height: 64px; font-size: 1.5rem; color: white;">
+                        {{ request.user.first_name|first|default:"К" }}
+                    </div>
+                    <h2 class="h5 mb-0">
+                        {{ request.user.get_full_name|default:request.user.username }}
+                    </h2>
+                    <p class="text-muted small">Клиент</p>
+                </div>
+
+                <hr>
+
+                <div class="small">
+                    {% if request.user.phone %}
+                    <div class="mb-2">
+                        <span class="text-muted">Телефон:</span><br>
+                        {{ request.user.phone }}
+                    </div>
+                    {% endif %}
+                    {% if request.user.email %}
+                    <div class="mb-2">
+                        <span class="text-muted">Email:</span><br>
+                        {{ request.user.email }}
+                    </div>
+                    {% endif %}
+                </div>
+
+                <hr>
+
+                <form method="post" action="{% url 'accounts:logout' %}">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-outline-danger btn-sm w-100">
+                        Выйти
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        {# ── Правая колонка — подборки ───────────────────────────────────── #}
+        <div class="col-lg-9">
+            <h1 class="h3 mb-4">Мои подборки</h1>
+
+            {% if selections %}
+            {% for selection in selections %}
+            <div class="card border-0 shadow-sm rounded-3 mb-4">
+                <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center py-3">
+                    <div>
+                        <h2 class="h5 mb-0">{{ selection.title }}</h2>
+                        <span class="text-muted small">
+                            От {{ selection.agent.get_full_name|default:"риелтора" }} ·
+                            {{ selection.created_at|date:"d.m.Y" }}
+                        </span>
+                    </div>
+                    <span class="badge bg-secondary">
+                        {{ selection.items.count }} объектов
+                    </span>
+                </div>
+
+                <div class="card-body">
+                    {% if selection.items.all %}
+                    <div class="row g-3">
+                        {% for item in selection.items.all %}
+                        <div class="col-md-6">
+                            <div class="border rounded-3 overflow-hidden">
+                                {# Фото объекта #}
+                                {% if item.property.cover_photo %}
+                                <img src="{{ item.property.cover_photo.image.url }}"
+                                     class="w-100"
+                                     style="height: 160px; object-fit: cover;"
+                                     alt="">
+                                {% endif %}
+
+                                <div class="p-3">
+                                    <h3 class="h6 mb-1">
+                                        {{ item.property.get_property_type_display }}
+                                        {% if item.property.area_total %}
+                                            {{ item.property.area_total }} м²
+                                        {% endif %}
+                                    </h3>
+                                    <p class="text-muted small mb-1">
+                                        {{ item.property.city }}
+                                        {% if item.property.street %}, {{ item.property.street }}{% endif %}
+                                    </p>
+                                    <p class="fw-bold text-primary mb-2">
+                                        {{ item.property.price|intcomma }} ₽
+                                    </p>
+
+                                    {% if item.agent_comment %}
+                                    <div class="alert alert-info py-2 small mb-2">
+                                        💬 {{ item.agent_comment }}
+                                    </div>
+                                    {% endif %}
+
+                                    {# Реакция клиента #}
+                                    <div class="d-flex gap-2">
+                                        <form method="post"
+                                              action="{% url 'selection_public:react' selection.public_token item.pk %}">
+                                            {% csrf_token %}
+                                            <button type="submit" name="status" value="liked"
+                                                    class="btn btn-sm {% if item.client_status == 'liked' %}btn-success{% else %}btn-outline-success{% endif %}">
+                                                👍
+                                            </button>
+                                        </form>
+                                        <form method="post"
+                                              action="{% url 'selection_public:react' selection.public_token item.pk %}">
+                                            {% csrf_token %}
+                                            <button type="submit" name="status" value="maybe"
+                                                    class="btn btn-sm {% if item.client_status == 'maybe' %}btn-warning{% else %}btn-outline-warning{% endif %}">
+                                                🤔
+                                            </button>
+                                        </form>
+                                        <form method="post"
+                                              action="{% url 'selection_public:react' selection.public_token item.pk %}">
+                                            {% csrf_token %}
+                                            <button type="submit" name="status" value="rejected"
+                                                    class="btn btn-sm {% if item.client_status == 'rejected' %}btn-danger{% else %}btn-outline-danger{% endif %}">
+                                                👎
+                                            </button>
+                                        </form>
+                                        <a href="{% url 'public:property_detail' item.property.agency.slug item.property.pk item.property.public_token %}"
+                                           class="btn btn-outline-secondary btn-sm ms-auto">
+                                            Подробнее →
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="text-muted text-center py-3">
+                        В подборке пока нет объектов.
+                    </p>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+
+            {% else %}
+            <div class="text-center py-5">
+                <div style="font-size: 3rem;">📋</div>
+                <h3 class="mt-3">Подборок пока нет</h3>
+                <p class="text-muted">
+                    Когда риелтор подготовит для вас подборку объектов —
+                    она появится здесь. Убедитесь что риелтор знает ваш
+                    email: <strong>{{ request.user.email }}</strong>
+                </p>
+                <a href="{% url 'public:catalog' %}" class="btn btn-primary">
+                    Смотреть каталог
+                </a>
+            </div>
+            {% endif %}
+
+        </div>
+    </div>
+</div>
+{% endblock %}

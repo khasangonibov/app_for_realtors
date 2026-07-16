@@ -1,6 +1,7 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib import messages
 from django.db.models import Q
+from django.core.paginator import Paginator
 
 from apps.accounts.decorators import crm_required
 from .models import Contact, ContactActivity
@@ -17,11 +18,9 @@ def contact_list(request):
         agency=request.user.agency
     ).select_related('agent')
 
-    # Риелтор видит только своих контактов
     if request.user.is_agent:
         queryset = queryset.filter(agent=request.user)
 
-    # Поиск
     search = request.GET.get('search', '').strip()
     if search:
         queryset = queryset.filter(
@@ -31,19 +30,25 @@ def contact_list(request):
             Q(email__icontains=search)
         )
 
-    # Фильтр по статусу
     status = request.GET.get('status', '')
     if status:
         queryset = queryset.filter(status=status)
 
-    # Фильтр по типу
     contact_type = request.GET.get('contact_type', '')
     if contact_type:
         queryset = queryset.filter(contact_type=contact_type)
 
+    total_count = queryset.count()
+
+    # Пагинация — 20 контактов на страницу
+    paginator = Paginator(queryset, 20)
+    page_number = request.GET.get('page', 1)
+    page_obj = paginator.get_page(page_number)
+
     return render(request, 'contacts/list.html', {
-        'contacts': queryset,
-        'total_count': queryset.count(),
+        'contacts': page_obj,
+        'page_obj': page_obj,
+        'total_count': total_count,
         'status_choices': Contact.Status.choices,
         'type_choices': Contact.ContactType.choices,
         'current_status': status,

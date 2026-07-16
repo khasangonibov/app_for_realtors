@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+{% extends "public_base.html" %}
 {% load static humanize %}
 
 {% block title %}{{ property.get_deal_type_display }} | {{ property.get_property_type_display }}{% if property.area_total %} | {{ property.area_total }} м²{% endif %} | {{ property.city }}{% endblock %}

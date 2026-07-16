@@ -125,7 +125,7 @@
                     <div class="p-3 border-bottom d-flex justify-content-between">
                         <h2 class="h5 mb-0">Последние объекты</h2>
                         <a href="{% url 'properties:list' %}"
-                           class="btn btn-outline-secondary btn-sm">
+                        class="btn btn-outline-secondary btn-sm">
                             Все объекты
                         </a>
                     </div>
@@ -133,27 +133,39 @@
                     <div class="row g-0">
                         {% for property in recent_properties %}
                         <div class="col-md-4 border-end border-bottom">
-                            {% if property.cover_photo %}
-                            <img src="{{ property.cover_photo.image.url }}"
-                                 class="w-100"
-                                 style="height: 120px; object-fit: cover;"
-                                 alt="">
-                            {% else %}
-                            <div class="bg-secondary-subtle d-flex align-items-center justify-content-center"
-                                 style="height: 120px;">
-                                <span class="text-muted small">Нет фото</span>
-                            </div>
-                            {% endif %}
-                            <div class="p-2">
-                                <div class="small fw-semibold">
-                                    {{ property.get_property_type_display }}
-                                    {% if property.area_total %}{{ property.area_total }} м²{% endif %}
+                            {# Вся карточка — ссылка на редактирование объекта #}
+                            <a href="{% url 'properties:edit' property.pk %}"
+                            class="text-decoration-none text-dark d-block h-100">
+                                {% if property.cover_photo %}
+                                <img src="{{ property.cover_photo.image.url }}"
+                                    class="w-100"
+                                    style="height: 120px; object-fit: cover;"
+                                    alt="">
+                                {% else %}
+                                <div class="bg-secondary-subtle d-flex align-items-center justify-content-center"
+                                    style="height: 120px;">
+                                    <span class="text-muted small">Нет фото</span>
                                 </div>
-                                <div class="text-muted small">{{ property.city }}</div>
-                                <div class="text-primary small fw-bold">
-                                    {{ property.price|intcomma }} ₽
+                                {% endif %}
+                                <div class="p-2">
+                                    <div class="small fw-semibold">
+                                        {{ property.get_property_type_display }}
+                                        {% if property.area_total %}{{ property.area_total }} м²{% endif %}
+                                    </div>
+                                    <div class="text-muted small">{{ property.city }}</div>
+                                    <div class="text-primary small fw-bold">
+                                        {{ property.price|intcomma }} ₽
+                                    </div>
+                                    {# Статус объекта #}
+                                    <span class="badge mt-1
+                                        {% if property.status == 'active' %}bg-success
+                                        {% elif property.status == 'draft' %}bg-secondary
+                                        {% else %}bg-warning text-dark{% endif %}"
+                                        style="font-size: 0.7rem;">
+                                        {{ property.get_status_display }}
+                                    </span>
                                 </div>
-                            </div>
+                            </a>
                         </div>
                         {% endfor %}
                     </div>

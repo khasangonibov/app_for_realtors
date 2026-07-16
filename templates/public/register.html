@@ -1,0 +1,86 @@
+{% extends "public_base.html" %}
+
+{% block title %}Регистрация{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6 col-lg-5">
+            <div class="card border-0 shadow-sm rounded-3">
+                <div class="card-body p-4">
+                    <h1 class="h4 mb-1 text-center">Регистрация</h1>
+                    <p class="text-muted text-center small mb-4">
+                        Создайте аккаунт чтобы получать подборки объектов
+                    </p>
+
+                    {% if form.errors %}
+                    <div class="alert alert-danger">
+                        <ul class="mb-0">
+                            {% for field in form %}
+                                {% for error in field.errors %}
+                                <li><strong>{{ field.label }}:</strong> {{ error }}</li>
+                                {% endfor %}
+                            {% endfor %}
+                            {% for error in form.non_field_errors %}
+                            <li>{{ error }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    {% endif %}
+
+                    <form method="post" novalidate>
+                        {% csrf_token %}
+                        <div class="row g-3">
+                            <div class="col-6">
+                                <label class="form-label small">{{ form.last_name.label }}</label>
+                                {{ form.last_name }}
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label small">
+                                    {{ form.first_name.label }}
+                                    <span class="text-danger">*</span>
+                                </label>
+                                {{ form.first_name }}
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label small">{{ form.username.label }} <span class="text-danger">*</span></label>
+                                {{ form.username }}
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label small">{{ form.email.label }}</label>
+                                {{ form.email }}
+                                <div class="form-text">
+                                    По email риелтор сможет привязать к вам подборки
+                                </div>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label small">{{ form.phone.label }}</label>
+                                {{ form.phone }}
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label small">{{ form.password1.label }} <span class="text-danger">*</span></label>
+                                {{ form.password1 }}
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label small">{{ form.password2.label }} <span class="text-danger">*</span></label>
+                                {{ form.password2 }}
+                            </div>
+                            <div class="col-12">
+                                <button type="submit" class="btn btn-primary w-100">
+                                    Зарегистрироваться
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+
+                    <hr>
+                    <p class="text-center small mb-0">
+                        Уже есть аккаунт?
+                        <a href="{% url 'public:public_login' %}">Войти</a>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
