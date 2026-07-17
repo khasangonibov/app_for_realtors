@@ -19,8 +19,14 @@ class TaskForm(forms.ModelForm):
                 attrs={'class': 'form-control', 'type': 'datetime-local'},
                 format='%Y-%m-%dT%H:%M',
             ),
-            'contact': forms.Select(attrs={'class': 'form-select'}),
-            'related_property': forms.Select(attrs={'class': 'form-select'}),
+            'contact': forms.Select(attrs={
+                'class': 'form-select select2',
+                'data-placeholder': 'Выберите контакт...',
+            }),
+            'related_property': forms.Select(attrs={
+                'class': 'form-select select2',
+                'data-placeholder': 'Выберите объект...',
+            }),
             'description': forms.Textarea(attrs={
                 'class': 'form-control', 'rows': 3,
             }),

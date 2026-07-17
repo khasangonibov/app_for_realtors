@@ -7,6 +7,9 @@
     <title>{% block title %}CRM{% endblock %} — {% if agency %}{{ agency.name }}{% else %}Агентство недвижимости{% endif %}</title>
 
     <link rel="stylesheet" href="{% static 'vendor/bootstrap/css/bootstrap.min.css' %}">
+    <link rel="stylesheet" href="{% static 'vendor/select2/select2.min.css' %}">
+    <link rel="stylesheet" href="{% static 'vendor/select2/select2-bootstrap5.min.css' %}">
+
 
     {# Общие стили CRM #}
     <style>
@@ -69,5 +72,21 @@
     <script src="{% static 'vendor/htmx/htmx.min.js' %}"></script>
 
     {% block extra_js %}{% endblock %}
+
+    <script src="{% static 'vendor/jquery/jquery.min.js' %}"></script>
+    <script src="{% static 'vendor/select2/select2.min.js' %}"></script>
+    <script>
+        // Инициализируем Select2 на всех select с классом select2
+        $(document).ready(function() {
+            $('.select2').select2({
+                theme: 'bootstrap-5',
+                language: {
+                    noResults: function() { return 'Ничего не найдено'; },
+                    searching: function() { return 'Поиск...'; },
+                },
+                width: '100%',
+            });
+        });
+    </script>
 </body>
 </html>

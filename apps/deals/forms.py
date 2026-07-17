@@ -15,10 +15,19 @@ class DealForm(forms.ModelForm):
             'notes',
         ]
         widgets = {
-            'property': forms.Select(attrs={'class': 'form-select'}),
+            'property': forms.Select(attrs={
+                'class': 'form-select select2',
+                'data-placeholder': 'Выберите объект...',
+            }),
             'stage': forms.Select(attrs={'class': 'form-select'}),
-            'seller_contact': forms.Select(attrs={'class': 'form-select'}),
-            'buyer_contact': forms.Select(attrs={'class': 'form-select'}),
+            'seller_contact': forms.Select(attrs={
+                'class': 'form-select select2',
+                'data-placeholder': 'Выберите продавца...',
+            }),
+            'buyer_contact': forms.Select(attrs={
+                'class': 'form-select select2',
+                'data-placeholder': 'Выберите покупателя...',
+            }),
             'price_agreed': forms.NumberInput(attrs={'class': 'form-control'}),
             'commission_total': forms.NumberInput(attrs={'class': 'form-control'}),
             'deposit_amount': forms.NumberInput(attrs={'class': 'form-control'}),

@@ -12,7 +12,10 @@ class SelectionForm(forms.ModelForm):
                 'class': 'form-control',
                 'placeholder': 'Например: Квартиры для Ивановых',
             }),
-            'contact': forms.Select(attrs={'class': 'form-select'}),
+            'contact': forms.Select(attrs={
+                'class': 'form-select select2',
+                'data-placeholder': 'Начните вводить имя или телефон...',
+            }),
         }
         labels = {
             'title': 'Название подборки',
