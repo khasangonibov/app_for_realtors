@@ -1,5 +1,7 @@
 from django import forms
-from .models import Property
+from django.forms import inlineformset_factory
+
+from .models import Property, PropertyFeature
 
 
 class PropertyFilterForm(forms.Form):
@@ -124,4 +126,107 @@ class PropertyForm(forms.ModelForm):
             'longitude': 'Долгота',
             'is_published': 'Опубликован публично',
             'is_exclusive': 'Эксклюзивный объект',
-        } 
+        }
+        
+# Характеристики с предустановленными вариантами значений
+FEATURE_CHOICES = {
+    'Тип дома': [
+        'Панельный', 'Кирпичный', 'Монолитный',
+        'Монолитно-кирпичный', 'Блочный', 'Деревянный',
+    ],
+    'Санузел': [
+        'Раздельный', 'Совмещённый', '2 санузла', '3 и более санузла',
+    ],
+    'Балкон': [
+        'Нет', 'Балкон', 'Лоджия', '2 балкона', 'Балкон и лоджия',
+    ],
+    'Лифт': [
+        'Нет', 'Пассажирский', 'Грузовой', 'Пассажирский и грузовой',
+    ],
+    'Парковка': [
+        'Нет', 'Подземная', 'Наземная', 'Многоуровневая', 'На улице',
+    ],
+    'Отопление': [
+        'Центральное', 'Индивидуальное', 'Газовое', 'Электрическое', 'Нет',
+    ],
+    'Ремонт': [
+        'Без ремонта', 'Требует ремонта', 'Косметический',
+        'Евроремонт', 'Дизайнерский', 'Черновая отделка',
+    ],
+    'Окна': [
+        'Во двор', 'На улицу', 'На обе стороны', 'Панорамные',
+    ],
+    'Интернет': [
+        'Нет', 'Есть', 'Оптоволокно',
+    ],
+    'Мебель': [
+        'Без мебели', 'Частично', 'Полностью меблирована', 'Кухня',
+    ],
+    'Тип перекрытий': [
+        'Железобетонные', 'Деревянные', 'Смешанные',
+    ],
+    'Высота потолков': [
+        'До 2.5 м', '2.5 – 2.7 м', '2.7 – 3 м', 'Более 3 м',
+    ],
+    'Газ': [
+        'Есть', 'Нет',
+    ],
+    'Мусоропровод': [
+        'Есть', 'Нет',
+    ],
+}
+
+# Список ключей в нужном порядке
+FEATURE_TEMPLATES = list(FEATURE_CHOICES.keys())
+
+class PropertyFeatureForm(forms.ModelForm):
+    """Форма одной характеристики объекта.
+    Виджет выбирается динамически — для известных характеристик
+    показываем выпадающий список, для остальных — текстовое поле.
+    """
+
+    class Meta:
+        model = PropertyFeature
+        fields = ['key', 'value']
+        widgets = {
+            'key': forms.TextInput(attrs={
+                'class': 'form-control form-control-sm',
+                'readonly': True,
+            }),
+            'value': forms.TextInput(attrs={
+                'class': 'form-control form-control-sm',
+            }),
+        }
+        labels = {
+            'key': 'Характеристика',
+            'value': 'Значение',
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        # Если у этой характеристики есть предустановленные варианты —
+        # меняем виджет на Select
+        key = None
+        if self.instance and self.instance.pk:
+            key = self.instance.key
+        elif self.initial.get('key'):
+            key = self.initial['key']
+
+        if key and key in FEATURE_CHOICES:
+            choices = [('', '— Выберите —')] + [
+                (v, v) for v in FEATURE_CHOICES[key]
+            ]
+            self.fields['value'].widget = forms.Select(
+                attrs={'class': 'form-select form-select-sm'},
+                choices=choices,
+            )
+
+# Formset для редактирования нескольких характеристик одновременно
+PropertyFeatureFormSet = inlineformset_factory(
+    parent_model=Property,
+    model=PropertyFeature,
+    form=PropertyFeatureForm,
+    extra=0,        # не добавлять пустые строки автоматически
+    can_delete=True,
+)

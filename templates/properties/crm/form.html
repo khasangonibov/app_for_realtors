@@ -131,6 +131,20 @@
                         <label class="form-label">{{ form.longitude.label }}</label>
                         {{ form.longitude }}
                     </div>
+
+                    {# Кнопка геокодинга — определяет координаты по адресу #}
+                    <div class="col-12">
+                        <button type="button"
+                                id="geocodeBtn"
+                                class="btn btn-outline-secondary btn-sm"
+                                onclick="geocodeAddress()">
+                            📍 Определить координаты по адресу
+                        </button>
+                        <span class="text-muted small ms-2">
+                            Заполните город, улицу и дом — затем нажмите кнопку
+                        </span>
+                    </div>
+
                 </div>
             </div>
 
@@ -226,6 +240,40 @@
             </div>
             {% endif %}
 
+            {# ── Характеристики объекта ──────────────────────────────────────────── #}
+            {% if feature_formset %}
+            <div class="bg-white rounded p-4 mb-4 border">
+                <h2 class="h5 mb-3">Характеристики</h2>
+                <p class="text-muted small mb-3">
+                    Заполните характеристики объекта — они отображаются
+                    на публичной карточке для клиентов.
+                </p>
+
+                {{ feature_formset.management_form }}
+
+                <div class="row g-2">
+                    {% for feature_form in feature_formset %}
+                    <div class="col-md-6">
+                        <div class="d-flex gap-2 align-items-center">
+                            {{ feature_form.id }}
+                            <div style="width: 45%;">
+                                {{ feature_form.key }}
+                            </div>
+                            <div class="flex-grow-1">
+                                {{ feature_form.value }}
+                            </div>
+                            {# Чекбокс удаления — скрываем визуально #}
+                            <div style="display: none;">
+                                {{ feature_form.DELETE }}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+
             {# ── Кнопки ──────────────────────────────────────────────────── #}
             <div class="d-flex gap-3">
                 <button type="submit" class="btn btn-primary px-4">
@@ -244,6 +292,69 @@
 {% block extra_js %}
 {% if property %}
 <script>
+    // ── Геокодинг по адресу ────────────────────────────────────────────────────
+    // Когда пользователь заполнил город + улицу + дом и нажал кнопку —
+    // запрашиваем координаты через Nominatim (OpenStreetMap)
+
+    async function geocodeAddress() {
+        const city = document.querySelector('[name="city"]').value.trim();
+        const street = document.querySelector('[name="street"]').value.trim();
+        const building = document.querySelector('[name="building"]').value.trim();
+
+        if (!city) {
+            alert('Укажите город для определения координат.');
+            return;
+        }
+
+        // Собираем адрес для запроса
+        const parts = [building, street, city].filter(Boolean);
+        const address = parts.join(', ');
+
+        const btn = document.getElementById('geocodeBtn');
+        btn.textContent = 'Определяем...';
+        btn.disabled = true;
+
+        try {
+            const url = `https://nominatim.openstreetmap.org/search?` +
+                `q=${encodeURIComponent(address)}&format=json&limit=1&countrycodes=ru`;
+
+            const response = await fetch(url, {
+                headers: {
+                    // Nominatim требует User-Agent
+                    'User-Agent': 'RealEstateCRM/1.0'
+                }
+            });
+            const data = await response.json();
+
+            if (data.length > 0) {
+                const lat = parseFloat(data[0].lat).toFixed(7);
+                const lon = parseFloat(data[0].lon).toFixed(7);
+
+                document.querySelector('[name="latitude"]').value = lat;
+                document.querySelector('[name="longitude"]').value = lon;
+
+                btn.textContent = '✓ Координаты определены';
+                btn.classList.remove('btn-outline-secondary');
+                btn.classList.add('btn-success');
+
+                // Через 3 секунды возвращаем кнопку в исходное состояние
+                setTimeout(() => {
+                    btn.textContent = '📍 Определить координаты по адресу';
+                    btn.classList.remove('btn-success');
+                    btn.classList.add('btn-outline-secondary');
+                    btn.disabled = false;
+                }, 3000);
+            } else {
+                alert(`Адрес не найден: "${address}". Попробуйте уточнить город или улицу.`);
+                btn.textContent = '📍 Определить координаты по адресу';
+                btn.disabled = false;
+            }
+        } catch (error) {
+            alert('Ошибка при определении координат. Проверьте подключение к интернету.');
+            btn.textContent = '📍 Определить координаты по адресу';
+            btn.disabled = false;
+        }
+    }
     // CSRF токен для AJAX запросов
     const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
 

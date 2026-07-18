@@ -1,6 +1,6 @@
 """
 CRM-views для работы с объектами недвижимости.
-Все views требуют авторизации — декоратор @login_required.
+Все views требуют авторизации — декоратор @crm_required.
 """
 
 from django.shortcuts import render, get_object_or_404, redirect
@@ -10,8 +10,8 @@ from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 from django.core.paginator import Paginator
 
-from apps.properties.models import Property, PropertyPhoto
-from apps.properties.forms import PropertyFilterForm, PropertyForm
+from apps.properties.models import Property, PropertyPhoto, PropertyFeature
+from apps.properties.forms import PropertyFilterForm, PropertyForm, PropertyFeatureFormSet, FEATURE_TEMPLATES
 from apps.accounts.decorators import crm_required
 from apps.core.exports import (
     create_excel_response, style_header_row, finalize_excel
@@ -73,8 +73,16 @@ def property_create(request):
             property_obj.agency = request.user.agency
             property_obj.agent = request.user
             property_obj.save()
+            # шаблонные характеристики для нового объекта
+            for key in FEATURE_TEMPLATES:
+                PropertyFeature.objects.create(
+                    property=property_obj,
+                    key=key,
+                    value='',
+                )
+                
             messages.success(request, 'Объект успешно создан.')
-            return redirect('properties:list')
+            return redirect('properties:edit', pk=property_obj.pk)
     else:
         form = PropertyForm()
 
@@ -99,16 +107,23 @@ def property_edit(request, pk):
 
     if request.method == 'POST':
         form = PropertyForm(request.POST, instance=property_obj)
-        if form.is_valid():
+        feature_formset = PropertyFeatureFormSet(
+            request.POST,
+            instance=property_obj,
+        )
+        if form.is_valid() and feature_formset.is_valid():
             form.save()
+            feature_formset.save()
             messages.success(request, 'Объект успешно обновлён.')
             return redirect('properties:list')
     else:
         form = PropertyForm(instance=property_obj)
+        feature_formset = PropertyFeatureFormSet(instance=property_obj)
 
     return render(request, 'properties/crm/form.html', {
         'form': form,
         'property': property_obj,
+        'feature_formset': feature_formset,
         'title': 'Редактировать объект',
         'submit_label': 'Сохранить изменения',
     })

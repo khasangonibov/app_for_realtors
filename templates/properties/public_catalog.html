@@ -7,7 +7,7 @@
 
 {# ── Hero секция ──────────────────────────────────────────────────────────── #}
 <div class="hero">
-    <div class="container">
+    <div class="container-fluid px-4 py-4">
         <h1 class="display-6 fw-bold mb-2">Каталог недвижимости</h1>
         <p class="text-white-50 mb-0">
             Найдено объектов: <strong class="text-white">{{ total_count }}</strong>
@@ -15,11 +15,11 @@
     </div>
 </div>
 
-<div class="container py-4">
+<div class="container-fluid px-4 py-4">
     <div class="row g-4">
 
         {# ── Боковая панель фильтров ─────────────────────────────────────── #}
-        <div class="col-lg-3">
+        <div class="col-lg-2">
             <div class="filter-panel sticky-top" style="top: 20px;">
                 <h2 class="h5 mb-3">Фильтры</h2>
 
@@ -118,31 +118,29 @@
         </div>
 
         {# ── Список объектов ─────────────────────────────────────────────── #}
-        <div class="col-lg-9">
+        <div class="col-lg-10">
 
             {% if properties %}
             <div class="row g-3">
                 {% for property in properties %}
-                <div class="col-md-6 col-xl-4">
+                <div class="col-md-6 col-lg-4 col-xl-3">
                     <a href="{% url 'public:property_detail' property.agency.slug property.pk property.public_token %}"
-                       class="text-decoration-none text-dark">
+                    class="text-decoration-none text-dark">
                         <div class="card property-card shadow-sm h-100">
 
-                            {# Фото #}
                             <div class="position-relative">
                                 {% if property.cover_photo %}
                                 <img src="{{ property.cover_photo.image.url }}"
-                                     class="card-img-top"
-                                     style="height: 200px; object-fit: cover;"
-                                     alt="">
+                                    class="card-img-top"
+                                    style="height: 220px; object-fit: cover;"
+                                    alt="">
                                 {% else %}
                                 <div class="bg-secondary-subtle d-flex align-items-center justify-content-center"
-                                     style="height: 200px;">
+                                    style="height: 220px;">
                                     <span class="text-muted small">Нет фото</span>
                                 </div>
                                 {% endif %}
 
-                                {# Тип сделки #}
                                 <span class="position-absolute top-0 start-0 m-2 badge
                                     {% if property.deal_type == 'sale' %}bg-primary
                                     {% else %}bg-success{% endif %}">
@@ -157,12 +155,9 @@
                             </div>
 
                             <div class="card-body">
-                                {# Тип объекта #}
                                 <div class="text-muted small mb-1">
                                     {{ property.get_property_type_display }}
                                 </div>
-
-                                {# Основные параметры #}
                                 <h5 class="card-title mb-1" style="font-size: 1rem;">
                                     {% if property.rooms_count %}
                                         {{ property.rooms_count }}-комн.,
@@ -174,17 +169,12 @@
                                         · {{ property.floor }}/{{ property.floors_total }} эт.
                                     {% endif %}
                                 </h5>
-
-                                {# Адрес #}
                                 <p class="text-muted small mb-2">
                                     📍 {{ property.city }}
                                     {% if property.district %}, {{ property.district }}{% endif %}
                                     {% if property.street %}, {{ property.street }}{% endif %}
                                 </p>
-
-                                {# Цена #}
-                                <p class="fw-bold text-primary mb-0"
-                                   style="font-size: 1.1rem;">
+                                <p class="fw-bold text-primary mb-0" style="font-size: 1.1rem;">
                                     {{ property.price|intcomma }} ₽
                                     {% if property.deal_type == 'rent' %}
                                     <span class="text-muted fw-normal small">/мес.</span>
@@ -197,11 +187,8 @@
                                 {% endif %}
                             </div>
 
-                            {# Агентство #}
                             <div class="card-footer bg-white border-top py-2">
-                                <span class="text-muted small">
-                                    {{ property.agency.name }}
-                                </span>
+                                <span class="text-muted small">{{ property.agency.name }}</span>
                             </div>
 
                         </div>
