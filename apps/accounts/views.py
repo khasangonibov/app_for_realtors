@@ -34,17 +34,20 @@ class CRMLogoutView(auth_views.LogoutView):
 @crm_required
 def dashboard(request):
     """Главная страница CRM — статистика и виджеты."""
-    from apps.properties.models import Property
+    from apps.properties.models import Property, PropertyView
     from apps.contacts.models import Contact
     from apps.deals.models import Deal
     from apps.tasks.models import Task
+    from django.db.models import Count, Sum
+    from datetime import timedelta
 
     agency = request.user.agency
     now = timezone.now()
     today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
-    today_end = now.replace(hour=23, minute=59, second=59, microsecond=999999)
+    today_end = now.replace(hour=23, minute=59, second=59)
+    week_start = today_start - timedelta(days=today_start.weekday())
+    thirty_days_ago = now - timedelta(days=30)
 
-    # Базовые фильтры — риелтор видит своё, менеджер/admin — всё агентства
     if request.user.is_agent:
         properties_qs = Property.objects.filter(agency=agency, agent=request.user)
         contacts_qs = Contact.objects.filter(agency=agency, agent=request.user)
@@ -56,22 +59,15 @@ def dashboard(request):
         deals_qs = Deal.objects.filter(agency=agency)
         tasks_qs = Task.objects.filter(agency=agency, agent=request.user)
 
-    # ── Виджеты (счётчики) ────────────────────────────────────────────────
+    # ── Виджеты ───────────────────────────────────────────────────────────
     stats = {
-        # Объекты
         'properties_active': properties_qs.filter(status='active').count(),
         'properties_draft': properties_qs.filter(status='draft').count(),
-
-        # Контакты
         'contacts_new': contacts_qs.filter(status='new').count(),
         'contacts_in_progress': contacts_qs.filter(status='in_progress').count(),
-
-        # Сделки
         'deals_active': deals_qs.exclude(
             stage__in=['closed', 'cancelled']
         ).count(),
-
-        # Задачи
         'tasks_today': tasks_qs.filter(
             is_done=False,
             due_date__range=(today_start, today_end),
@@ -82,14 +78,62 @@ def dashboard(request):
         ).count(),
     }
 
-    # ── Списки для виджетов ───────────────────────────────────────────────
+    # ── Просроченные задачи ───────────────────────────────────────────────
     overdue_tasks = tasks_qs.filter(
         is_done=False,
         due_date__lt=now,
     ).select_related('contact').order_by('due_date')[:5]
 
+    # ── Задачи на эту неделю для календаря ───────────────────────────────
+    week_tasks = tasks_qs.filter(
+        is_done=False,
+        due_date__gte=week_start,
+        due_date__lte=week_start + timedelta(days=7),
+    ).select_related('contact').order_by('due_date')
+
+    # Группируем задачи по дням недели (0=пн, 6=вс)
+    calendar_days = []
+    day_names = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс']
+    for i in range(7):
+        day = week_start + timedelta(days=i)
+        day_tasks = [t for t in week_tasks
+                     if t.due_date.date() == day.date()]
+        calendar_days.append({
+            'name': day_names[i],
+            'date': day,
+            'tasks': day_tasks,
+            'is_today': day.date() == now.date(),
+        })
+
+    # ── Мини-канбан сделок ────────────────────────────────────────────────
+    active_deals = deals_qs.exclude(
+        stage__in=['closed', 'cancelled']
+    ).select_related('property', 'buyer_contact').order_by('created_at')
+
+    deals_by_stage = {}
+    stage_order = ['negotiation', 'deposit', 'documents', 'registration']
+    stage_labels = dict(Deal.Stage.choices)
+    for stage in stage_order:
+        deals_by_stage[stage] = {
+            'label': stage_labels.get(stage, stage),
+            'deals': [d for d in active_deals if d.stage == stage],
+        }
+
+    # ── Статистика просмотров моих объектов ───────────────────────────────
+    my_properties_views = PropertyView.objects.filter(
+        property__in=properties_qs,
+        viewed_at__gte=thirty_days_ago,
+    ).count()
+
+    # Топ объектов по просмотрам
+    top_viewed = properties_qs.annotate(
+        views_count=Count('views')
+    ).filter(views_count__gt=0).order_by('-views_count')[:5]
+
+    # ── Последние контакты ────────────────────────────────────────────────
     recent_contacts = contacts_qs.order_by('-created_at')[:5]
 
+    # ── Последние объекты ─────────────────────────────────────────────────
     recent_properties = properties_qs.order_by(
         '-created_at'
     ).prefetch_related('photos')[:6]
@@ -97,6 +141,10 @@ def dashboard(request):
     return render(request, 'accounts/dashboard.html', {
         'stats': stats,
         'overdue_tasks': overdue_tasks,
+        'calendar_days': calendar_days,
+        'deals_by_stage': deals_by_stage,
+        'my_properties_views': my_properties_views,
+        'top_viewed': top_viewed,
         'recent_contacts': recent_contacts,
         'recent_properties': recent_properties,
         'now': now,

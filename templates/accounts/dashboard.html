@@ -5,58 +5,55 @@
 
 {% block content %}
 <div class="bg-light min-vh-100">
+    <div class="container-fluid px-4 py-4">
 
-    <div class="container-fluid px-4">
-
-        <h1 class="h3 mb-4">
-            Добро пожаловать, {{ request.user.first_name|default:request.user.username }}!
-        </h1>
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1 class="h3 mb-0">
+                Добро пожаловать, {{ request.user.first_name|default:request.user.username }}!
+            </h1>
+            <span class="text-muted small">
+                {{ now|date:"d.m.Y, l" }}
+            </span>
+        </div>
 
         {# ── Виджеты-счётчики ────────────────────────────────────────────── #}
         <div class="row g-3 mb-4">
-
-            <div class="col-sm-6 col-xl-3">
+            <div class="col-6 col-xl-3">
                 <a href="{% url 'properties:list' %}?status=active"
                    class="text-decoration-none">
-                    <div class="bg-white rounded border p-4 h-100">
+                    <div class="bg-white rounded border p-3 h-100">
                         <div class="text-muted small mb-1">Активных объектов</div>
                         <div class="h2 mb-0 text-primary">{{ stats.properties_active }}</div>
                         {% if stats.properties_draft %}
-                        <div class="text-muted small mt-1">
-                            + {{ stats.properties_draft }} черновиков
-                        </div>
+                        <div class="text-muted small">+ {{ stats.properties_draft }} черновиков</div>
                         {% endif %}
                     </div>
                 </a>
             </div>
-
-            <div class="col-sm-6 col-xl-3">
+            <div class="col-6 col-xl-3">
                 <a href="{% url 'contacts:list' %}?status=new"
                    class="text-decoration-none">
-                    <div class="bg-white rounded border p-4 h-100">
+                    <div class="bg-white rounded border p-3 h-100">
                         <div class="text-muted small mb-1">Новых контактов</div>
                         <div class="h2 mb-0 text-success">{{ stats.contacts_new }}</div>
                         {% if stats.contacts_in_progress %}
-                        <div class="text-muted small mt-1">
-                            {{ stats.contacts_in_progress }} в работе
-                        </div>
+                        <div class="text-muted small">{{ stats.contacts_in_progress }} в работе</div>
                         {% endif %}
                     </div>
                 </a>
             </div>
-
-            <div class="col-sm-6 col-xl-3">
+            <div class="col-6 col-xl-3">
                 <a href="{% url 'deals:board' %}" class="text-decoration-none">
-                    <div class="bg-white rounded border p-4 h-100">
+                    <div class="bg-white rounded border p-3 h-100">
                         <div class="text-muted small mb-1">Активных сделок</div>
                         <div class="h2 mb-0 text-warning">{{ stats.deals_active }}</div>
+                        <div class="text-muted small">в воронке</div>
                     </div>
                 </a>
             </div>
-
-            <div class="col-sm-6 col-xl-3">
+            <div class="col-6 col-xl-3">
                 <a href="{% url 'tasks:list' %}" class="text-decoration-none">
-                    <div class="bg-white rounded border p-4 h-100
+                    <div class="bg-white rounded border p-3 h-100
                         {% if stats.tasks_overdue %}border-danger{% endif %}">
                         <div class="text-muted small mb-1">Задач на сегодня</div>
                         <div class="h2 mb-0
@@ -64,53 +61,214 @@
                             {{ stats.tasks_today }}
                         </div>
                         {% if stats.tasks_overdue %}
-                        <div class="text-danger small mt-1">
-                            ⚠ {{ stats.tasks_overdue }} просрочено
-                        </div>
+                        <div class="text-danger small">⚠ {{ stats.tasks_overdue }} просрочено</div>
                         {% endif %}
                     </div>
                 </a>
+            </div>
+        </div>
+
+        <div class="row g-4 mb-4">
+
+            {# ── Календарь задач на неделю ───────────────────────────────── #}
+            <div class="col-lg-8">
+                <div class="bg-white rounded border p-4">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h2 class="h5 mb-0">Задачи на неделю</h2>
+                        <a href="{% url 'tasks:create' %}"
+                           class="btn btn-outline-primary btn-sm">
+                            + Задача
+                        </a>
+                    </div>
+                    <div class="row g-2">
+                        {% for day in calendar_days %}
+                        <div class="col">
+                            <div class="rounded p-2 h-100
+                                {% if day.is_today %}bg-primary bg-opacity-10 border border-primary{% else %}bg-light{% endif %}"
+                                 style="min-height: 120px;">
+                                <div class="fw-semibold small mb-2
+                                    {% if day.is_today %}text-primary{% endif %}">
+                                    {{ day.name }}
+                                    <div class="text-muted fw-normal" style="font-size: 0.7rem;">
+                                        {{ day.date|date:"d.m" }}
+                                    </div>
+                                </div>
+                                {% for task in day.tasks %}
+                                <a href="{% url 'tasks:edit' task.pk %}"
+                                   class="d-block text-decoration-none mb-1">
+                                    <div class="rounded px-2 py-1 small
+                                        {% if task.priority == 'high' %}bg-danger text-white
+                                        {% elif task.priority == 'normal' %}bg-warning text-dark
+                                        {% else %}bg-secondary text-white{% endif %}"
+                                         style="font-size: 0.7rem; line-height: 1.3;">
+                                        {{ task.title|truncatechars:20 }}
+                                    </div>
+                                </a>
+                                {% empty %}
+                                <div class="text-muted text-center"
+                                     style="font-size: 0.7rem; margin-top: 1rem;">
+                                    —
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            {# ── Статистика просмотров ───────────────────────────────────── #}
+            <div class="col-lg-4">
+                <div class="bg-white rounded border p-4 h-100">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h2 class="h5 mb-0">Просмотры объектов</h2>
+                        <span class="text-muted small">30 дней</span>
+                    </div>
+                    <div class="text-center py-2 mb-3">
+                        <div class="h1 text-primary mb-0">{{ my_properties_views }}</div>
+                        <div class="text-muted small">всего просмотров</div>
+                    </div>
+                    {% if top_viewed %}
+                    <div class="border-top pt-3">
+                        <div class="text-muted small mb-2">Топ по просмотрам:</div>
+                        {% for prop in top_viewed %}
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <a href="{% url 'properties:edit' prop.pk %}"
+                               class="text-decoration-none small text-truncate me-2"
+                               style="max-width: 70%;">
+                                {{ prop.city }}{% if prop.street %}, {{ prop.street }}{% endif %}
+                            </a>
+                            <span class="badge bg-primary rounded-pill">
+                                {{ prop.views_count }}
+                            </span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center text-muted small py-3">
+                        Просмотров пока нет
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+        </div>
+
+        <div class="row g-4 mb-4">
+
+            {# ── Мини-канбан сделок ──────────────────────────────────────── #}
+            <div class="col-12">
+                <div class="bg-white rounded border p-4">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h2 class="h5 mb-0">Активные сделки</h2>
+                        <div class="d-flex gap-2">
+                            <a href="{% url 'deals:create' %}"
+                               class="btn btn-outline-primary btn-sm">
+                                + Сделка
+                            </a>
+                            <a href="{% url 'deals:board' %}"
+                               class="btn btn-outline-secondary btn-sm">
+                                Все сделки →
+                            </a>
+                        </div>
+                    </div>
+
+                    {% if stats.deals_active %}
+                    <div class="row g-3">
+                        {% for stage_key, column in deals_by_stage.items %}
+                        <div class="col-md-6 col-xl-3">
+                            <div class="rounded bg-light p-2">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <span class="small fw-semibold">{{ column.label }}</span>
+                                    <span class="badge bg-secondary">
+                                        {{ column.deals|length }}
+                                    </span>
+                                </div>
+                                {% for deal in column.deals %}
+                                <a href="{% url 'deals:edit' deal.pk %}"
+                                   class="text-decoration-none">
+                                    <div class="bg-white rounded p-2 mb-2 border shadow-sm">
+                                        {% if deal.property %}
+                                        <div class="small fw-semibold text-truncate">
+                                            {{ deal.property.city }}
+                                            {% if deal.property.street %}
+                                                , {{ deal.property.street }}
+                                            {% endif %}
+                                        </div>
+                                        {% endif %}
+                                        {% if deal.buyer_contact %}
+                                        <div class="text-muted small">
+                                            {{ deal.buyer_contact.full_name }}
+                                        </div>
+                                        {% endif %}
+                                        {% if deal.price_agreed %}
+                                        <div class="text-primary small fw-bold">
+                                            {{ deal.price_agreed|intcomma }} ₽
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                </a>
+                                {% empty %}
+                                <div class="text-center text-muted py-3"
+                                     style="font-size: 0.8rem;">
+                                    Нет сделок
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4 text-muted">
+                        <p class="mb-2">Активных сделок нет</p>
+                        <a href="{% url 'deals:create' %}" class="btn btn-primary btn-sm">
+                            Создать первую сделку
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
             </div>
 
         </div>
 
         <div class="row g-4">
 
-            {# ── Левая колонка ───────────────────────────────────────────── #}
-            <div class="col-lg-8">
-
-                {# Просроченные задачи #}
-                {% if overdue_tasks %}
-                <div class="bg-white rounded border border-danger mb-4">
-                    <div class="p-3 border-bottom border-danger d-flex justify-content-between">
+            {# ── Просроченные задачи ─────────────────────────────────────── #}
+            {% if overdue_tasks %}
+            <div class="col-lg-6">
+                <div class="bg-white rounded border border-danger p-4">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
                         <h2 class="h5 mb-0 text-danger">⚠ Просроченные задачи</h2>
-                        <a href="{% url 'tasks:list' %}" class="btn btn-outline-danger btn-sm">
+                        <a href="{% url 'tasks:list' %}"
+                           class="btn btn-outline-danger btn-sm">
                             Все задачи
                         </a>
                     </div>
                     <div class="list-group list-group-flush">
                         {% for task in overdue_tasks %}
-                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                        <div class="list-group-item px-0 d-flex justify-content-between align-items-start">
                             <div>
-                                <span class="fw-semibold">{{ task.title }}</span>
+                                <div class="fw-semibold small">{{ task.title }}</div>
                                 {% if task.contact %}
-                                <span class="text-muted small ms-2">
+                                <div class="text-muted small">
                                     {{ task.contact.full_name }}
-                                </span>
+                                </div>
                                 {% endif %}
                                 <div class="text-danger small">
-                                    Срок: {{ task.due_date|date:"d.m.Y H:i" }}
+                                    {{ task.due_date|date:"d.m.Y H:i" }}
                                 </div>
                             </div>
-                            <div class="d-flex gap-2">
+                            <div class="d-flex gap-1 ms-2">
                                 <a href="{% url 'tasks:edit' task.pk %}"
                                    class="btn btn-outline-secondary btn-sm">
-                                    Открыть
+                                    ✏️
                                 </a>
-                                <form method="post" action="{% url 'tasks:done' task.pk %}">
+                                <form method="post"
+                                      action="{% url 'tasks:done' task.pk %}">
                                     {% csrf_token %}
-                                    <button type="submit" class="btn btn-success btn-sm">
-                                        Выполнено
+                                    <button type="submit"
+                                            class="btn btn-success btn-sm">
+                                        ✓
                                     </button>
                                 </form>
                             </div>
@@ -118,52 +276,89 @@
                         {% endfor %}
                     </div>
                 </div>
-                {% endif %}
+            </div>
+            {% endif %}
 
-                {# Последние объекты #}
-                <div class="bg-white rounded border mb-4">
-                    <div class="p-3 border-bottom d-flex justify-content-between">
+            {# ── Последние контакты ──────────────────────────────────────── #}
+            <div class="col-lg-{% if overdue_tasks %}6{% else %}4{% endif %}">
+                <div class="bg-white rounded border p-4 h-100">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h2 class="h5 mb-0">Последние контакты</h2>
+                        <a href="{% url 'contacts:list' %}"
+                           class="btn btn-outline-secondary btn-sm">
+                            Все →
+                        </a>
+                    </div>
+                    {% if recent_contacts %}
+                    <div class="list-group list-group-flush">
+                        {% for contact in recent_contacts %}
+                        <a href="{% url 'contacts:detail' contact.pk %}"
+                           class="list-group-item list-group-item-action px-0 py-2">
+                            <div class="d-flex justify-content-between">
+                                <span class="fw-semibold small">
+                                    {{ contact.full_name }}
+                                </span>
+                                <span class="badge
+                                    {% if contact.status == 'new' %}bg-primary
+                                    {% elif contact.status == 'in_progress' %}bg-warning text-dark
+                                    {% else %}bg-secondary{% endif %}"
+                                    style="font-size: 0.65rem;">
+                                    {{ contact.get_status_display }}
+                                </span>
+                            </div>
+                            <div class="text-muted small">{{ contact.phone }}</div>
+                        </a>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4 text-muted small">
+                        <p class="mb-2">Контактов пока нет</p>
+                        <a href="{% url 'contacts:create' %}"
+                           class="btn btn-outline-success btn-sm">
+                            Добавить первый
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            {# ── Последние объекты ───────────────────────────────────────── #}
+            {% if not overdue_tasks %}
+            <div class="col-lg-8">
+                <div class="bg-white rounded border p-4">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
                         <h2 class="h5 mb-0">Последние объекты</h2>
                         <a href="{% url 'properties:list' %}"
-                        class="btn btn-outline-secondary btn-sm">
-                            Все объекты
+                           class="btn btn-outline-secondary btn-sm">
+                            Все →
                         </a>
                     </div>
                     {% if recent_properties %}
-                    <div class="row g-0">
+                    <div class="row g-2">
                         {% for property in recent_properties %}
-                        <div class="col-md-4 border-end border-bottom">
-                            {# Вся карточка — ссылка на редактирование объекта #}
+                        <div class="col-md-4">
                             <a href="{% url 'properties:edit' property.pk %}"
-                            class="text-decoration-none text-dark d-block h-100">
+                               class="text-decoration-none text-dark d-block">
                                 {% if property.cover_photo %}
                                 <img src="{{ property.cover_photo.image.url }}"
-                                    class="w-100"
-                                    style="height: 120px; object-fit: cover;"
-                                    alt="">
+                                     class="w-100 rounded mb-1"
+                                     style="height: 100px; object-fit: cover;"
+                                     alt="">
                                 {% else %}
-                                <div class="bg-secondary-subtle d-flex align-items-center justify-content-center"
-                                    style="height: 120px;">
+                                <div class="bg-secondary-subtle rounded mb-1 d-flex align-items-center justify-content-center"
+                                     style="height: 100px;">
                                     <span class="text-muted small">Нет фото</span>
                                 </div>
                                 {% endif %}
-                                <div class="p-2">
-                                    <div class="small fw-semibold">
-                                        {{ property.get_property_type_display }}
-                                        {% if property.area_total %}{{ property.area_total }} м²{% endif %}
-                                    </div>
-                                    <div class="text-muted small">{{ property.city }}</div>
-                                    <div class="text-primary small fw-bold">
-                                        {{ property.price|intcomma }} ₽
-                                    </div>
-                                    {# Статус объекта #}
-                                    <span class="badge mt-1
-                                        {% if property.status == 'active' %}bg-success
-                                        {% elif property.status == 'draft' %}bg-secondary
-                                        {% else %}bg-warning text-dark{% endif %}"
-                                        style="font-size: 0.7rem;">
-                                        {{ property.get_status_display }}
-                                    </span>
+                                <div class="small fw-semibold">
+                                    {{ property.get_property_type_display }}
+                                    {% if property.area_total %}
+                                        {{ property.area_total }} м²
+                                    {% endif %}
+                                </div>
+                                <div class="text-muted small">{{ property.city }}</div>
+                                <div class="text-primary small fw-bold">
+                                    {{ property.price|intcomma }} ₽
                                 </div>
                             </a>
                         </div>
@@ -171,82 +366,57 @@
                     </div>
                     {% else %}
                     <div class="text-center py-4 text-muted small">
-                        Объектов пока нет.
-                        <a href="{% url 'properties:create' %}">Добавить первый</a>
+                        <p class="mb-2">Объектов пока нет</p>
+                        <a href="{% url 'properties:create' %}"
+                           class="btn btn-outline-primary btn-sm">
+                            Добавить первый
+                        </a>
                     </div>
                     {% endif %}
                 </div>
-
             </div>
+            {% endif %}
 
-            {# ── Правая колонка ──────────────────────────────────────────── #}
-            <div class="col-lg-4">
-
-                {# Последние контакты #}
-                <div class="bg-white rounded border mb-4">
-                    <div class="p-3 border-bottom d-flex justify-content-between">
-                        <h2 class="h5 mb-0">Последние контакты</h2>
-                        <a href="{% url 'contacts:list' %}"
-                           class="btn btn-outline-secondary btn-sm">
-                            Все
-                        </a>
-                    </div>
-                    {% if recent_contacts %}
-                    <div class="list-group list-group-flush">
-                        {% for contact in recent_contacts %}
-                        <a href="{% url 'contacts:detail' contact.pk %}"
-                           class="list-group-item list-group-item-action py-3">
-                            <div class="d-flex justify-content-between">
-                                <span class="fw-semibold">{{ contact.full_name }}</span>
-                                <span class="badge
-                                    {% if contact.status == 'new' %}bg-primary
-                                    {% elif contact.status == 'in_progress' %}bg-warning text-dark
-                                    {% else %}bg-secondary{% endif %}">
-                                    {{ contact.get_status_display }}
-                                </span>
-                            </div>
-                            <div class="text-muted small mt-1">
-                                {{ contact.phone }} · {{ contact.get_contact_type_display }}
-                            </div>
-                        </a>
-                        {% endfor %}
-                    </div>
-                    {% else %}
-                    <div class="text-center py-4 text-muted small">
-                        Контактов пока нет.
-                        <a href="{% url 'contacts:create' %}">Добавить первый</a>
-                    </div>
-                    {% endif %}
-                </div>
-
-                {# Быстрые действия #}
+            {# ── Быстрые действия ────────────────────────────────────────── #}
+            <div class="col-lg-{% if overdue_tasks %}12{% else %}4{% endif %}">
                 <div class="bg-white rounded border p-4">
                     <h2 class="h5 mb-3">Быстрые действия</h2>
-                    <div class="d-grid gap-2">
-                        <a href="{% url 'properties:create' %}" class="btn btn-outline-primary btn-sm">
-                            + Добавить объект
+                    <div class="d-grid gap-2
+                        {% if overdue_tasks %}d-md-flex flex-wrap{% endif %}">
+                        <a href="{% url 'properties:create' %}"
+                           class="btn btn-outline-primary btn-sm">
+                            + Объект
                         </a>
-                        <a href="{% url 'contacts:create' %}" class="btn btn-outline-success btn-sm">
-                            + Добавить контакт
+                        <a href="{% url 'contacts:create' %}"
+                           class="btn btn-outline-success btn-sm">
+                            + Контакт
                         </a>
-                        <a href="{% url 'deals:create' %}" class="btn btn-outline-warning btn-sm">
-                            + Новая сделка
+                        <a href="{% url 'deals:create' %}"
+                           class="btn btn-outline-warning btn-sm">
+                            + Сделка
                         </a>
-                        <a href="{% url 'selections:create' %}" class="btn btn-outline-info btn-sm">
-                            + Новая подборка
+                        <a href="{% url 'selections:create' %}"
+                           class="btn btn-outline-info btn-sm">
+                            + Подборка
                         </a>
-                        <a href="{% url 'tasks:create' %}" class="btn btn-outline-secondary btn-sm">
-                            + Новая задача
+                        <a href="{% url 'tasks:create' %}"
+                           class="btn btn-outline-secondary btn-sm">
+                            + Задача
                         </a>
                         {% if not request.user.is_agent %}
-                        <a href="{% url 'accounts:users_list' %}" class="btn btn-outline-dark btn-sm">
+                        <a href="{% url 'accounts:users_list' %}"
+                           class="btn btn-outline-dark btn-sm">
                             👥 Сотрудники
+                        </a>
+                        <a href="{% url 'analytics:dashboard' %}"
+                           class="btn btn-outline-dark btn-sm">
+                            📊 Аналитика
                         </a>
                         {% endif %}
                     </div>
                 </div>
-
             </div>
+
         </div>
     </div>
 </div>
