@@ -19,4 +19,10 @@ urlpatterns = [
     path('register/', account_views.client_register, name='register'),
     path('profile/', account_views.client_profile, name='profile'),
     path('login/', account_views.PublicLoginView.as_view(), name='public_login'),
+    
+    # Сравнение объектов
+    path('compare/', views.compare, name='compare'),
+    path('compare/add/<uuid:pk>/', views.compare_add, name='compare_add'),
+    path('compare/remove/<uuid:pk>/', views.compare_remove, name='compare_remove'),
+    path('compare/clear/', views.compare_clear, name='compare_clear'),
 ]

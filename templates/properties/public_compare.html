@@ -1,0 +1,213 @@
+{% extends "public_base.html" %}
+{% load property_extras %}
+{% load humanize %}
+
+{% block title %}Сравнение объектов{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-4">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3 mb-0">Сравнение объектов</h1>
+        <a href="{% url 'public:compare_clear' %}"
+           class="btn btn-outline-danger btn-sm">
+            Очистить список
+        </a>
+    </div>
+
+    {% if properties %}
+
+    {# ── Таблица сравнения ───────────────────────────────────────────────── #}
+    <div class="table-responsive">
+        <table class="table table-bordered align-middle"
+               style="min-width: 600px;">
+            <thead>
+                <tr>
+                    <th style="width: 180px;" class="bg-light">Характеристика</th>
+                    {% for property in properties %}
+                    <th class="text-center">
+
+                        {# Фото #}
+                        {% if property.cover_photo %}
+                        <img src="{{ property.cover_photo.image.url }}"
+                             class="rounded mb-2"
+                             style="width: 100%; height: 140px; object-fit: cover;"
+                             alt="">
+                        {% else %}
+                        <div class="bg-secondary-subtle rounded mb-2 d-flex align-items-center justify-content-center"
+                             style="height: 140px;">
+                            <span class="text-muted small">Нет фото</span>
+                        </div>
+                        {% endif %}
+
+                        {# Название и ссылка #}
+                        <a href="{% url 'public:property_detail' property.agency.slug property.pk property.public_token %}"
+                           class="d-block fw-semibold text-decoration-none mb-1"
+                           style="font-size: 0.9rem;">
+                            {{ property.get_property_type_display }}
+                            {% if property.area_total %}{{ property.area_total }} м²{% endif %}
+                        </a>
+
+                        {# Цена #}
+                        <div class="text-primary fw-bold mb-2">
+                            {{ property.price|intcomma }} ₽
+                        </div>
+
+                        {# Кнопка удалить из сравнения #}
+                        <a href="{% url 'public:compare_remove' property.pk %}"
+                           class="btn btn-outline-danger btn-sm">
+                            ✕ Убрать
+                        </a>
+
+                    </th>
+                    {% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+
+                {# ── Основные параметры ──────────────────────────────────── #}
+                <tr class="table-light">
+                    <td colspan="{{ properties|length|add:1 }}" class="fw-semibold">
+                        Основное
+                    </td>
+                </tr>
+                <tr>
+                    <td class="text-muted small">Тип сделки</td>
+                    {% for property in properties %}
+                    <td class="text-center small">
+                        {{ property.get_deal_type_display }}
+                    </td>
+                    {% endfor %}
+                </tr>
+                <tr>
+                    <td class="text-muted small">Тип объекта</td>
+                    {% for property in properties %}
+                    <td class="text-center small">
+                        {{ property.get_property_type_display }}
+                    </td>
+                    {% endfor %}
+                </tr>
+                <tr>
+                    <td class="text-muted small">Адрес</td>
+                    {% for property in properties %}
+                    <td class="text-center small">
+                        {{ property.city }}
+                        {% if property.street %}, {{ property.street }}{% endif %}
+                        {% if property.building %}, {{ property.building }}{% endif %}
+                    </td>
+                    {% endfor %}
+                </tr>
+
+                {# ── Площади ─────────────────────────────────────────────── #}
+                <tr class="table-light">
+                    <td colspan="{{ properties|length|add:1 }}" class="fw-semibold">
+                        Площади и этажность
+                    </td>
+                </tr>
+                <tr>
+                    <td class="text-muted small">Общая площадь, м²</td>
+                    {% for property in properties %}
+                    <td class="text-center small">
+                        {{ property.area_total|default:"—" }}
+                    </td>
+                    {% endfor %}
+                </tr>
+                <tr>
+                    <td class="text-muted small">Жилая площадь, м²</td>
+                    {% for property in properties %}
+                    <td class="text-center small">
+                        {{ property.area_living|default:"—" }}
+                    </td>
+                    {% endfor %}
+                </tr>
+                <tr>
+                    <td class="text-muted small">Площадь кухни, м²</td>
+                    {% for property in properties %}
+                    <td class="text-center small">
+                        {{ property.area_kitchen|default:"—" }}
+                    </td>
+                    {% endfor %}
+                </tr>
+                <tr>
+                    <td class="text-muted small">Комнат</td>
+                    {% for property in properties %}
+                    <td class="text-center small">
+                        {{ property.rooms_count|default:"—" }}
+                    </td>
+                    {% endfor %}
+                </tr>
+                <tr>
+                    <td class="text-muted small">Этаж / этажей</td>
+                    {% for property in properties %}
+                    <td class="text-center small">
+                        {% if property.floor and property.floors_total %}
+                            {{ property.floor }}/{{ property.floors_total }}
+                        {% else %}—{% endif %}
+                    </td>
+                    {% endfor %}
+                </tr>
+
+                {# ── Цена ────────────────────────────────────────────────── #}
+                <tr class="table-light">
+                    <td colspan="{{ properties|length|add:1 }}" class="fw-semibold">
+                        Цена
+                    </td>
+                </tr>
+                <tr>
+                    <td class="text-muted small">Цена, ₽</td>
+                    {% for property in properties %}
+                    <td class="text-center small fw-bold text-primary">
+                        {{ property.price|intcomma }}
+                    </td>
+                    {% endfor %}
+                </tr>
+                <tr>
+                    <td class="text-muted small">Цена за м², ₽</td>
+                    {% for property in properties %}
+                    <td class="text-center small">
+                        {% if property.price_per_sqm %}
+                            {{ property.price_per_sqm|intcomma }}
+                        {% else %}—{% endif %}
+                    </td>
+                    {% endfor %}
+                </tr>
+
+                {# ── Характеристики ──────────────────────────────────────── #}
+                {% if comparison_table %}
+                <tr class="table-light">
+                    <td colspan="{{ properties|length|add:1 }}" class="fw-semibold">
+                        Характеристики
+                    </td>
+                </tr>
+                {% for key, values in comparison_table.items %}
+                <tr>
+                    <td class="text-muted small">{{ key }}</td>
+                    {% for property in properties %}
+                    <td class="text-center small">
+                        {{ values|get_item:property.pk }}
+                    </td>
+                    {% endfor %}
+                </tr>
+                {% endfor %}
+                
+                {% endif %}
+
+            </tbody>
+        </table>
+    </div>
+
+    {% else %}
+    <div class="text-center py-5">
+        <div style="font-size: 3rem;">⚖️</div>
+        <h3 class="mt-3">Список сравнения пуст</h3>
+        <p class="text-muted">
+            Добавьте объекты к сравнению нажав кнопку ⚖️ на карточке объекта
+        </p>
+        <a href="{% url 'public:catalog' %}" class="btn btn-primary">
+            Перейти в каталог
+        </a>
+    </div>
+    {% endif %}
+
+</div>
+{% endblock %}

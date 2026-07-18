@@ -187,9 +187,11 @@
                                 {% endif %}
                             </div>
 
-                            <div class="card-footer bg-white border-top py-2">
-                                <span class="text-muted small">{{ property.agency.name }}</span>
-                            </div>
+                            <button class="btn btn-outline-secondary btn-sm"
+                                    onclick="event.preventDefault(); event.stopPropagation(); addToCompare('{{ property.pk }}')"
+                                    title="Добавить к сравнению">
+                                ⚖️
+                            </button>
 
                         </div>
                     </a>

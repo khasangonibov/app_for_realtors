@@ -69,6 +69,31 @@
 </head>
 <body>
 
+    {# Контейнер для динамических toast-уведомлений #}
+    <div class="position-fixed top-0 end-0 p-3" style="z-index: 9999;"
+        id="toastContainer">
+        {# Django messages — статичные при загрузке страницы #}
+        {% if messages %}
+        {% for message in messages %}
+        <div class="toast align-items-center border-0 show
+            {% if message.tags == 'error' %}bg-danger text-white
+            {% elif message.tags == 'warning' %}bg-warning text-dark
+            {% elif message.tags == 'success' %}bg-success text-white
+            {% else %}bg-info text-white{% endif %}"
+            role="alert"
+            data-bs-autohide="true"
+            data-bs-delay="5000">
+            <div class="d-flex">
+                <div class="toast-body fw-semibold">{{ message }}</div>
+                <button type="button"
+                        class="btn-close btn-close-{% if message.tags == 'warning' %}dark{% else %}white{% endif %} me-2 m-auto"
+                        data-bs-dismiss="toast"></button>
+            </div>
+        </div>
+        {% endfor %}
+        {% endif %}
+    </div>
+
     {# Публичный навбар #}
     <nav class="public-navbar">
         <div class="container-fluid px-4 d-flex justify-content-between align-items-center">
@@ -100,6 +125,22 @@
                         {{ user.get_full_name|default:user.username }}
                     </a>
                     {% endif %}
+                <span id="compareNavItem">
+                    {% with compare_count=request.session.compare_list|length %}
+                    {% if compare_count %}
+                    <a href="{% url 'public:compare' %}"
+                    id="compareBtn"
+                    class="btn btn-warning btn-sm position-relative">
+                        ⚖️ Сравнить
+                        <span class="position-absolute top-0 start-100
+                                    translate-middle badge rounded-pill bg-danger"
+                            style="font-size: 0.65rem;">
+                            {{ compare_count }}
+                        </span>
+                    </a>
+                    {% endif %}
+                    {% endwith %}
+                </span>
                 {% else %}
                 <a href="{% url 'public:register' %}"
                 class="btn btn-outline-light btn-sm">Регистрация</a>
@@ -109,6 +150,31 @@
             </div>
         </div>
     </nav>
+    {# Toast-уведомления — появляются поверх контента, исчезают через 5 сек #}
+    {% if messages %}
+    <div class="position-fixed top-0 end-0 p-3" style="z-index: 9999;">
+        {% for message in messages %}
+        <div class="toast align-items-center border-0 show
+            {% if message.tags == 'error' %}bg-danger text-white
+            {% elif message.tags == 'warning' %}bg-warning text-dark
+            {% elif message.tags == 'success' %}bg-success text-white
+            {% else %}bg-info text-white{% endif %}"
+            role="alert"
+            data-bs-autohide="true"
+            data-bs-delay="5000">
+            <div class="d-flex">
+                <div class="toast-body">
+                    {{ message }}
+                </div>
+                <button type="button"
+                        class="btn-close btn-close-{% if message.tags == 'warning' %}dark{% else %}white{% endif %} me-2 m-auto"
+                        data-bs-dismiss="toast">
+                </button>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
 
     {% block content %}{% endblock %}
 
@@ -134,6 +200,83 @@
     </footer>
 
     <script src="{% static 'vendor/bootstrap/js/bootstrap.bundle.min.js' %}"></script>
+    <script>
+    // ── Добавление в сравнение через AJAX ────────────────────────────────────
+    function addToCompare(pk) {
+        fetch(`/compare/add/${pk}/`, {
+            method: 'GET',
+            headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        })
+        .then(r => r.json())
+        .then(data => {
+            // Показываем toast-уведомление
+            showToast(data.message, data.status);
+
+            // Обновляем счётчик в навбаре без перезагрузки
+            updateCompareCounter(data.count);
+        })
+        .catch(() => {
+            showToast('Ошибка при добавлении объекта.', 'error');
+        });
+    }
+
+    function showToast(message, type) {
+        // Создаём toast динамически
+        const container = document.getElementById('toastContainer');
+        const colorClass = {
+            'success': 'bg-success text-white',
+            'warning': 'bg-warning text-dark',
+            'error': 'bg-danger text-white',
+            'info': 'bg-info text-white',
+        }[type] || 'bg-info text-white';
+
+        const btnClose = type === 'warning'
+            ? 'btn-close-dark'
+            : 'btn-close-white';
+
+        const toastEl = document.createElement('div');
+        toastEl.className = `toast align-items-center border-0 ${colorClass}`;
+        toastEl.setAttribute('role', 'alert');
+        toastEl.innerHTML = `
+            <div class="d-flex">
+                <div class="toast-body fw-semibold">${message}</div>
+                <button type="button"
+                        class="btn-close ${btnClose} me-2 m-auto"
+                        data-bs-dismiss="toast"></button>
+            </div>`;
+
+        container.appendChild(toastEl);
+
+        const bsToast = new bootstrap.Toast(toastEl, {
+            autohide: true,
+            delay: 5000,
+        });
+        bsToast.show();
+
+        // Удаляем элемент после скрытия
+        toastEl.addEventListener('hidden.bs.toast', () => toastEl.remove());
+    }
+
+    function updateCompareCounter(count) {
+        const nav = document.getElementById('compareNavItem');
+        if (!nav) return;
+
+        if (count > 0) {
+            nav.innerHTML = `
+                <a href="/compare/"
+                id="compareBtn"
+                class="btn btn-warning btn-sm position-relative">
+                    ⚖️ Сравнить
+                    <span class="position-absolute top-0 start-100
+                                translate-middle badge rounded-pill bg-danger"
+                        style="font-size: 0.65rem;">${count}</span>
+                </a>`;
+        } else {
+            nav.innerHTML = '';
+        }
+    }
+    </script>
+    
     {% block extra_js %}{% endblock %}
 </body>
 </html>

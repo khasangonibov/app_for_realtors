@@ -3,10 +3,12 @@
 Доступны без авторизации — по прямой ссылке с токеном.
 """
 
-from django.shortcuts import render, get_object_or_404
-from django.http import Http404
+from django.shortcuts import redirect, render, get_object_or_404
+from django.http import Http404, JsonResponse
 from django.core.paginator import Paginator
 from django.db.models import Q
+from django.contrib import messages
+
 
 from apps.properties.models import Property
 
@@ -135,4 +137,86 @@ def catalog(request):
         'current_price_min': price_min,
         'current_price_max': price_max,
         'current_search': search,
+    })
+    
+def compare_add(request, pk):
+    """Добавить объект в сравнение — возвращает JSON для AJAX."""
+    property_obj = get_object_or_404(
+        Property, pk=pk, is_published=True
+    )
+
+    compare_list = request.session.get('compare_list', [])
+    pk_str = str(pk)
+
+    if pk_str in compare_list:
+        return JsonResponse({
+            'status': 'info',
+            'message': 'Этот объект уже в списке сравнения.',
+            'count': len(compare_list),
+        })
+
+    if len(compare_list) >= 4:
+        return JsonResponse({
+            'status': 'warning',
+            'message': 'Можно сравнивать не более 4 объектов. Удалите один чтобы добавить новый.',
+            'count': len(compare_list),
+        })
+
+    compare_list.append(pk_str)
+    request.session['compare_list'] = compare_list
+    request.session.modified = True
+
+    return JsonResponse({
+        'status': 'success',
+        'message': f'Объект добавлен к сравнению.',
+        'count': len(compare_list),
+    })
+
+def compare_remove(request, pk):
+    """Удалить объект из сравнения."""
+    compare_list = request.session.get('compare_list', [])
+    pk_str = str(pk)
+
+    if pk_str in compare_list:
+        compare_list.remove(pk_str)
+        request.session['compare_list'] = compare_list
+
+    return redirect(request.META.get('HTTP_REFERER', 'public:compare'))
+
+
+def compare_clear(request):
+    """Очистить весь список сравнения."""
+    request.session['compare_list'] = []
+    return redirect('public:catalog')
+
+
+def compare(request):
+    """Страница сравнения объектов."""
+    compare_list = request.session.get('compare_list', [])
+
+    properties = Property.objects.filter(
+        pk__in=compare_list,
+        is_published=True,
+    ).prefetch_related('photos', 'features')
+
+    # Собираем все уникальные характеристики из всех объектов
+    all_feature_keys = []
+    for prop in properties:
+        for feature in prop.features.all():
+            if feature.key not in all_feature_keys:
+                all_feature_keys.append(feature.key)
+
+    # Строим таблицу сравнения
+    # {key: {property_pk: value}}
+    comparison_table = {}
+    for key in all_feature_keys:
+        comparison_table[key] = {}
+        for prop in properties:
+            feature = prop.features.filter(key=key).first()
+            comparison_table[key][str(prop.pk)] = feature.value if feature else '—'
+
+    return render(request, 'properties/public_compare.html', {
+        'properties': properties,
+        'comparison_table': comparison_table,
+        'compare_count': len(compare_list),
     })
