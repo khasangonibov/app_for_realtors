@@ -1,0 +1,236 @@
+{% extends "base.html" %}
+{% load humanize %}
+
+{% block title %}{{ contract.related_property }}{% endblock %}
+
+{% block content %}
+<div class="bg-light min-vh-100">
+    <div class="container-fluid px-4 py-4">
+
+        <div class="d-flex justify-content-between align-items-start mb-4">
+            <div>
+                <h1 class="h4 mb-1">
+                    {{ contract.related_property.get_property_type_display }}
+                    {% if contract.related_property.area_total %}{{ contract.related_property.area_total }} м²{% endif %}
+                </h1>
+                <p class="text-muted mb-0">
+                    {{ contract.related_property.city }}
+                    {% if contract.related_property.street %}, {{ contract.related_property.street }}{% endif %}
+                </p>
+            </div>
+            <div class="d-flex gap-2">
+                <a href="{% url 'trust_management:report' contract.pk %}" class="btn btn-outline-primary btn-sm">
+                    📄 Сформировать отчёт
+                </a>
+                <a href="{% url 'trust_management:edit' contract.pk %}" class="btn btn-outline-secondary btn-sm">
+                    Изменить договор
+                </a>
+            </div>
+        </div>
+
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        {% endfor %}
+
+        {# ── Сводка ───────────────────────────────────────────────────────── #}
+        <div class="row g-3 mb-4">
+            <div class="col-md-3">
+                <div class="bg-white rounded border p-3">
+                    <div class="text-muted small">Собственник</div>
+                    <div class="fw-semibold">{{ contract.owner.full_name }}</div>
+                    <div class="text-muted small">{{ contract.owner.phone }}</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="bg-white rounded border p-3">
+                    <div class="text-muted small">Доход всего</div>
+                    <div class="h5 mb-0 text-success">{{ contract.total_income|intcomma }} ₽</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="bg-white rounded border p-3">
+                    <div class="text-muted small">Расход всего</div>
+                    <div class="h5 mb-0 text-danger">{{ contract.total_expense|intcomma }} ₽</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="bg-white rounded border p-3">
+                    <div class="text-muted small">Чистый доход</div>
+                    <div class="h5 mb-0 {% if contract.net_income >= 0 %}text-success{% else %}text-danger{% endif %}">
+                        {{ contract.net_income|intcomma }} ₽
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-4">
+
+            {# ── Финансы ──────────────────────────────────────────────────── #}
+            <div class="col-lg-7">
+                <div class="bg-white rounded border p-4 mb-4">
+                    <h2 class="h5 mb-3">Добавить операцию</h2>
+                    <form method="post" class="row g-2 align-items-end">
+                        {% csrf_token %}
+                        <input type="hidden" name="add_transaction" value="1">
+                        <div class="col-md-2">
+                            <label class="form-label small">{{ t_form.type.label }}</label>
+                            {{ t_form.type }}
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label small">{{ t_form.category.label }}</label>
+                            {{ t_form.category }}
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label small">{{ t_form.amount.label }}</label>
+                            {{ t_form.amount }}
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label small">{{ t_form.date.label }}</label>
+                            {{ t_form.date }}
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label small">{{ t_form.description.label }}</label>
+                            {{ t_form.description }}
+                        </div>
+                        <div class="col-md-1">
+                            <button type="submit" class="btn btn-primary btn-sm w-100">+</button>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="bg-white rounded border overflow-hidden">
+                    <div class="p-3 border-bottom">
+                        <h2 class="h5 mb-0">История операций</h2>
+                    </div>
+                    {% if transactions %}
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Дата</th>
+                                <th>Тип</th>
+                                <th>Категория</th>
+                                <th>Описание</th>
+                                <th class="text-end">Сумма</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for t in transactions %}
+                            <tr>
+                                <td class="small">{{ t.date|date:"d.m.Y" }}</td>
+                                <td>
+                                    <span class="badge {% if t.type == 'income' %}bg-success{% else %}bg-danger{% endif %}">
+                                        {{ t.get_type_display }}
+                                    </span>
+                                </td>
+                                <td class="small">{{ t.get_category_display }}</td>
+                                <td class="small text-muted">{{ t.description|default:"—" }}</td>
+                                <td class="text-end fw-semibold {% if t.type == 'income' %}text-success{% else %}text-danger{% endif %}">
+                                    {% if t.type == 'income' %}+{% else %}−{% endif %}{{ t.amount|intcomma }} ₽
+                                </td>
+                                <td>
+                                    <form method="post"
+                                          action="{% url 'trust_management:transaction_delete' contract.pk t.pk %}"
+                                          onsubmit="return confirm('Удалить запись?')">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-outline-danger btn-sm">✕</button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                    {% else %}
+                    <div class="text-center py-4 text-muted small">Операций пока нет.</div>
+                    {% endif %}
+                </div>
+            </div>
+
+            {# ── Документы и журнал ──────────────────────────────────────── #}
+            <div class="col-lg-5">
+
+                <div class="bg-white rounded border p-4 mb-4">
+                    <h2 class="h5 mb-3">Документы</h2>
+                    <form method="post" enctype="multipart/form-data" class="mb-3">
+                        {% csrf_token %}
+                        <input type="hidden" name="add_document" value="1">
+                        <div class="row g-2">
+                            <div class="col-12">
+                                <label class="form-label small">{{ d_form.doc_type.label }}</label>
+                                {{ d_form.doc_type }}
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label small">{{ d_form.name.label }}</label>
+                                {{ d_form.name }}
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label small">{{ d_form.file.label }}</label>
+                                {{ d_form.file }}
+                            </div>
+                            <div class="col-12">
+                                <button type="submit" class="btn btn-primary btn-sm">Загрузить</button>
+                            </div>
+                        </div>
+                    </form>
+
+                    {% if documents %}
+                    <div class="list-group list-group-flush">
+                        {% for doc in documents %}
+                        <div class="list-group-item px-0 d-flex justify-content-between align-items-center">
+                            <div>
+                                <a href="{{ doc.file.url }}" target="_blank" class="text-decoration-none">
+                                    {{ doc.name }}
+                                </a>
+                                <div class="text-muted small">{{ doc.get_doc_type_display }}</div>
+                            </div>
+                            <form method="post"
+                                  action="{% url 'trust_management:document_delete' contract.pk doc.pk %}"
+                                  onsubmit="return confirm('Удалить документ?')">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-outline-danger btn-sm">✕</button>
+                            </form>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-muted small text-center py-2">Документов пока нет.</div>
+                    {% endif %}
+                </div>
+
+                {# Заглушка Росреестра #}
+                <div class="bg-white rounded border p-4 mb-4">
+                    <h2 class="h5 mb-2">Проверка Росреестра</h2>
+                    <p class="text-muted small mb-0">
+                        Интеграция с ФГИС ЕГРН находится в разработке.
+                        В будущем здесь появится автоматическая проверка
+                        прав собственности по кадастровому номеру.
+                    </p>
+                </div>
+
+                <div class="bg-white rounded border p-4">
+                    <h2 class="h5 mb-3">Журнал действий</h2>
+                    {% if activity_log %}
+                    <div class="list-group list-group-flush">
+                        {% for log in activity_log %}
+                        <div class="list-group-item px-0 py-2">
+                            <div class="small">{{ log.action }}</div>
+                            <div class="text-muted small">
+                                {{ log.user.get_full_name|default:"Система" }} ·
+                                {{ log.created_at|date:"d.m.Y H:i" }}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-muted small text-center py-2">Записей пока нет.</div>
+                    {% endif %}
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

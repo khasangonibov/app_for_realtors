@@ -84,6 +84,12 @@
                         {% endif %}
                     </a>
                 </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if request.resolver_match.namespace == 'trust_management' %}active{% endif %}"
+                    href="{% url 'trust_management:list' %}">
+                        🏢 Управление
+                    </a>
+                </li>
                 {% if not request.user.is_agent %}
                 <li class="nav-item">
                     <a class="nav-link {% if request.resolver_match.url_name == 'users_list' %}active{% endif %}"

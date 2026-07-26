@@ -32,6 +32,8 @@ urlpatterns = [
         path('', include('apps.tasks.urls', namespace='tasks')),
         path('', include('apps.analytics.urls', namespace='analytics')),
         path('', include('apps.chat.urls', namespace='chat')),
+        path('', include('apps.trust_management.urls', namespace='trust_management')),
+
     ])),
 
     # ── REST API ───────────────────────────────────────────────────────────────

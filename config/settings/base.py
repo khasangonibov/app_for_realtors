@@ -54,15 +54,16 @@ THIRD_PARTY_APPS = [
 LOCAL_APPS = [
     # Наши приложения в порядке зависимостей
     'apps.core', 
-    'apps.accounts',     # пользователи, агентства, роли
-    'apps.properties',   # объекты недвижимости
-    'apps.contacts',     # клиенты и лиды
-    'apps.deals',        # сделки
-    'apps.selections',   # подборки для клиентов
-    'apps.tasks',        # задачи и напоминания
-    'apps.analytics',    # отчёты и аналитика
-    'apps.notifications',# уведомления
-    'apps.chat',         # чат
+    'apps.accounts',          # пользователи, агентства, роли
+    'apps.properties',        # объекты недвижимости
+    'apps.contacts',          # клиенты и лиды
+    'apps.deals',             # сделки
+    'apps.selections',        # подборки для клиентов
+    'apps.tasks',             # задачи и напоминания
+    'apps.analytics',         # отчёты и аналитика
+    'apps.notifications',     # уведомления
+    'apps.chat',              # чат
+    'apps.trust_management',  # доверительное упрввление 
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS

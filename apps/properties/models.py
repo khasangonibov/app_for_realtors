@@ -9,7 +9,6 @@ from apps.accounts.models import Agency, User
 
 class Property(UUIDModel, TimeStampedModel):
     """Объект недвижимости — главная модель приложения.
-    Соответствует карточке вроде той, что на crm.topnlab.ru.
     """
 
     class DealType(models.TextChoices):

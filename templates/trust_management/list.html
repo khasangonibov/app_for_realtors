@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+{% load humanize %}
+
+{% block title %}Доверительное управление{% endblock %}
+
+{% block content %}
+<div class="bg-light min-vh-100">
+    <div class="container-fluid px-4 py-4">
+
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h1 class="h3 mb-0">Доверительное управление</h1>
+                <span class="text-muted small">Найдено: {{ total_count }}</span>
+            </div>
+            <a href="{% url 'trust_management:create' %}" class="btn btn-primary">
+                + Новый договор
+            </a>
+        </div>
+
+        {# Фильтр по статусу #}
+        <div class="bg-white rounded p-3 mb-4 border">
+            <form method="get" class="row g-2 align-items-end">
+                <div class="col-md-3">
+                    <label class="form-label small">Статус</label>
+                    <select name="status" class="form-select form-select-sm">
+                        <option value="">Все статусы</option>
+                        {% for value, label in status_choices %}
+                        <option value="{{ value }}" {% if current_status == value %}selected{% endif %}>
+                            {{ label }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2 d-flex gap-2">
+                    <button type="submit" class="btn btn-primary btn-sm w-100">Найти</button>
+                    <a href="{% url 'trust_management:list' %}" class="btn btn-outline-secondary btn-sm w-100">Сброс</a>
+                </div>
+            </form>
+        </div>
+
+        {% if contracts %}
+        <div class="row g-3">
+            {% for contract in contracts %}
+            <div class="col-md-6 col-xl-4">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <span class="badge
+                                {% if contract.status == 'active' %}bg-success
+                                {% elif contract.status == 'paused' %}bg-warning text-dark
+                                {% elif contract.status == 'terminated' %}bg-secondary
+                                {% else %}bg-light text-dark border{% endif %}">
+                                {{ contract.get_status_display }}
+                            </span>
+                            {% if contract.contract_number %}
+                            <span class="text-muted small">№ {{ contract.contract_number }}</span>
+                            {% endif %}
+                        </div>
+
+                        <h5 class="card-title mb-1" style="font-size: 1rem;">
+                            {{ contract.related_property.get_property_type_display }}
+                            {% if contract.related_property.area_total %}
+                                {{ contract.related_property.area_total }} м²
+                            {% endif %}
+                        </h5>
+                        <p class="text-muted small mb-2">
+                            {{ contract.related_property.city }}
+                            {% if contract.related_property.street %}, {{ contract.related_property.street }}{% endif %}
+                        </p>
+
+                        <p class="small mb-1">
+                            <span class="text-muted">Собственник:</span>
+                            {{ contract.owner.full_name }}
+                        </p>
+                        {% if contract.agent %}
+                        <p class="small mb-2">
+                            <span class="text-muted">Агент:</span>
+                            {{ contract.agent.get_full_name }}
+                        </p>
+                        {% endif %}
+
+                        <div class="d-flex justify-content-between border-top pt-2 mt-2">
+                            <div>
+                                <div class="text-muted small">Чистый доход</div>
+                                <div class="fw-bold {% if contract.net_income >= 0 %}text-success{% else %}text-danger{% endif %}">
+                                    {{ contract.net_income|intcomma }} ₽
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-footer bg-white border-top d-flex gap-2">
+                        <a href="{% url 'trust_management:detail' contract.pk %}"
+                           class="btn btn-outline-primary btn-sm flex-grow-1">
+                            Открыть
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        {% include 'crm/_pagination.html' %}
+
+        {% else %}
+        <div class="text-center py-5">
+            <p class="text-muted">Договоров управления пока нет.</p>
+            <a href="{% url 'trust_management:create' %}" class="btn btn-primary">
+                Создать первый договор
+            </a>
+        </div>
+        {% endif %}
+
+    </div>
+</div>
+{% endblock %}

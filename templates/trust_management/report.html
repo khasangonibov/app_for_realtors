@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+{% load humanize %}
+
+{% block title %}Отчёт — {{ contract.related_property }}{% endblock %}
+
+{% block content %}
+<div class="bg-light min-vh-100">
+    <div class="container py-4">
+
+        <div class="d-flex justify-content-between align-items-center mb-4 no-print">
+            <a href="{% url 'trust_management:detail' contract.pk %}" class="btn btn-outline-secondary btn-sm">
+                ← Назад к договору
+            </a>
+            <button onclick="window.print()" class="btn btn-primary btn-sm">
+                🖨 Печать / Сохранить в PDF
+            </button>
+        </div>
+
+        {# Фильтр по периоду #}
+        <div class="bg-white rounded border p-3 mb-4 no-print">
+            <form method="get" class="row g-2 align-items-end">
+                <div class="col-md-3">
+                    <label class="form-label small">С даты</label>
+                    <input type="date" name="date_from" value="{{ date_from }}" class="form-control form-control-sm">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label small">По дату</label>
+                    <input type="date" name="date_to" value="{{ date_to }}" class="form-control form-control-sm">
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary btn-sm w-100">Применить</button>
+                </div>
+            </form>
+        </div>
+
+        <div class="bg-white rounded border p-5">
+
+            <div class="text-center mb-4">
+                <h1 class="h3">Отчёт по управлению объектом</h1>
+                <p class="text-muted">
+                    {% if date_from or date_to %}
+                        Период: {{ date_from|default:"начало" }} — {{ date_to|default:"сегодня" }}
+                    {% else %}
+                        За весь период управления
+                    {% endif %}
+                </p>
+            </div>
+
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <h2 class="h6">Объект</h2>
+                    <p class="mb-1">
+                        {{ contract.related_property.get_property_type_display }}
+                        {% if contract.related_property.area_total %}{{ contract.related_property.area_total }} м²{% endif %}
+                    </p>
+                    <p class="text-muted small">
+                        {{ contract.related_property.city }}
+                        {% if contract.related_property.street %}, {{ contract.related_property.street }}{% endif %}
+                        {% if contract.related_property.building %}, {{ contract.related_property.building }}{% endif %}
+                    </p>
+                </div>
+                <div class="col-md-6">
+                    <h2 class="h6">Собственник</h2>
+                    <p class="mb-1">{{ contract.owner.full_name }}</p>
+                    <p class="text-muted small">{{ contract.owner.phone }}</p>
+                </div>
+            </div>
+
+            <div class="row g-3 mb-4">
+                <div class="col-4 text-center">
+                    <div class="text-muted small">Доход</div>
+                    <div class="h4 text-success">{{ total_income|intcomma }} ₽</div>
+                </div>
+                <div class="col-4 text-center">
+                    <div class="text-muted small">Расход</div>
+                    <div class="h4 text-danger">{{ total_expense|intcomma }} ₽</div>
+                </div>
+                <div class="col-4 text-center">
+                    <div class="text-muted small">Итого</div>
+                    <div class="h4 {% if net_income >= 0 %}text-success{% else %}text-danger{% endif %}">
+                        {{ net_income|intcomma }} ₽
+                    </div>
+                </div>
+            </div>
+
+            <table class="table table-bordered">
+                <thead class="table-light">
+                    <tr>
+                        <th>Дата</th>
+                        <th>Тип</th>
+                        <th>Категория</th>
+                        <th>Описание</th>
+                        <th class="text-end">Сумма</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for t in transactions %}
+                    <tr>
+                        <td>{{ t.date|date:"d.m.Y" }}</td>
+                        <td>{{ t.get_type_display }}</td>
+                        <td>{{ t.get_category_display }}</td>
+                        <td>{{ t.description|default:"—" }}</td>
+                        <td class="text-end {% if t.type == 'income' %}text-success{% else %}text-danger{% endif %}">
+                            {% if t.type == 'income' %}+{% else %}−{% endif %}{{ t.amount|intcomma }} ₽
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="text-center text-muted">Операций за период нет.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            <p class="text-muted small text-center mt-4">
+                Отчёт сформирован {% now "d.m.Y H:i" %}
+            </p>
+
+        </div>
+    </div>
+</div>
+
+<style>
+    @media print {
+        .no-print { display: none !important; }
+        .navbar, nav { display: none !important; }
+    }
+</style>
+{% endblock %}
