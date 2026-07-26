@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+{% load humanize %}
+
+{% block title %}Чат — {{ room.client.get_full_name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-4">
+
+    <div class="d-flex align-items-center gap-3 mb-4">
+        <a href="{% url 'chat:agent_list' %}"
+           class="btn btn-outline-secondary btn-sm">
+            ← Все чаты
+        </a>
+        <div>
+            <h1 class="h4 mb-0">
+                {{ room.client.get_full_name|default:room.client.username }}
+            </h1>
+            <span class="text-muted small">{{ room.client.email }}</span>
+        </div>
+    </div>
+
+    <div class="bg-white rounded border overflow-hidden"
+         style="height: 600px; display: flex; flex-direction: column;">
+
+        <div id="messagesContainer"
+             class="flex-grow-1 overflow-auto p-3"
+             style="background: #f8f9fa;"
+             hx-get="{% url 'chat:agent_poll' room.pk %}"
+             hx-trigger="every 5s"
+             hx-swap="innerHTML"
+             hx-target="#messagesContainer">
+            {% include 'chat/_messages.html' %}
+        </div>
+
+        <div class="border-top p-3 bg-white">
+
+            {# Блок предпросмотра ответа — скрыт по умолчанию #}
+            <div id="replyPreview" class="d-none mb-2 p-2 rounded bg-light border-start border-3 border-primary
+                                        d-flex justify-content-between align-items-start">
+                <div>
+                    <div class="fw-semibold small" id="replyAuthor"></div>
+                    <div class="text-muted small text-truncate" id="replyText" style="max-width: 300px;"></div>
+                </div>
+                <button type="button" class="btn-close btn-sm" onclick="cancelReply()"></button>
+            </div>
+
+            <form hx-post="{% url 'chat:agent_room' room.pk %}"
+                hx-target="#messagesContainer"
+                hx-swap="innerHTML"
+                hx-on::after-request="this.reset(); cancelReply();"
+                id="chatForm"
+                class="d-flex gap-2">
+                {% csrf_token %}
+                <input type="hidden" name="reply_to" id="replyToInput" value="">
+                <input type="text" name="text" id="messageInput"
+                    class="form-control"
+                    placeholder="Написать сообщение..."
+                    autocomplete="off" required>
+                <button type="submit" class="btn btn-primary px-4">
+                    Отправить
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function setReply(messageId, authorName, messageText) {
+        document.getElementById('replyToInput').value = messageId;
+        document.getElementById('replyAuthor').textContent = authorName;
+        document.getElementById('replyText').textContent = messageText;
+        document.getElementById('replyPreview').classList.remove('d-none');
+        document.getElementById('messageInput').focus();
+    }
+
+    function cancelReply() {
+        document.getElementById('replyToInput').value = '';
+        document.getElementById('replyPreview').classList.add('d-none');
+    }
+</script>
+<script>
+    function scrollToBottom() {
+        const container = document.getElementById('messagesContainer');
+        if (container) container.scrollTop = container.scrollHeight;
+    }
+    scrollToBottom();
+    document.body.addEventListener('htmx:afterSwap', function(e) {
+        if (e.detail.target.id === 'messagesContainer') scrollToBottom();
+    });
+</script>
+{% endblock %}

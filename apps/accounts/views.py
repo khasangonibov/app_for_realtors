@@ -3,8 +3,16 @@ from django.contrib import messages
 from django.shortcuts import render, get_object_or_404, redirect
 from django.utils import timezone
 from django.utils.crypto import get_random_string
+from django.contrib.auth.decorators import login_required
+
 
 from apps.accounts.decorators import crm_required, manager_required
+from apps.chat.views import (
+    get_or_create_room,
+    client_chat_list as _client_chat_list,
+    client_chat as _client_chat,
+    client_chat_poll as _client_chat_poll,
+)
 
 from .forms import CRMLoginForm
 from .models import User, UserProfile
@@ -15,14 +23,9 @@ class CRMLoginView(auth_views.LoginView):
     redirect_authenticated_user = True
 
     def form_valid(self, form):
-        """После успешной проверки логина/пароля — проверяем роль."""
         user = form.get_user()
-        # Клиентам (внешним пользователям) вход в CRM закрыт
-        if user.role == UserProfile.Role.CLIENT:
-            form.add_error(
-                None,
-                'Доступ в CRM закрыт для внешних пользователей.'
-            )
+        if hasattr(user, 'profile') and user.profile.role == UserProfile.Role.CLIENT:
+            form.add_error(None, 'Для клиентов вход через главную страницу сайта.')
             return self.form_invalid(form)
         return super().form_valid(form)
 
@@ -262,6 +265,8 @@ def user_reset_password(request, pk):
 def client_register(request):
     """Регистрация внешнего пользователя (клиента)."""
     from .forms import ClientRegisterForm
+    from apps.contacts.models import Contact
+    from apps.accounts.models import Agency
 
     if request.user.is_authenticated:
         return redirect('public:catalog')
@@ -270,23 +275,11 @@ def client_register(request):
         form = ClientRegisterForm(request.POST)
         if form.is_valid():
             user = form.save()
-
-            # Создаём профиль с ролью CLIENT
             UserProfile.objects.create(
                 user=user,
                 role=UserProfile.Role.CLIENT,
             )
-
-            # Автоматически создаём Contact во всех агентствах
-            # чтобы риелторы могли найти клиента и привязать подборку
-            # Берём первое активное агентство (или можно выбирать конкретное)
-            from apps.contacts.models import Contact
-            from apps.accounts.models import Agency
-
-            # Создаём контакт без привязки к конкретному агентству —
-            # риелтор сам найдёт по email и привяжет к своему агентству
-            # Либо создаём в агентстве которое указано в запросе (если сайт одного агентства)
-            agency = Agency.objects.first()  # для одноагентской системы
+            agency = Agency.objects.first()
             if agency:
                 Contact.objects.get_or_create(
                     email=user.email,
@@ -301,7 +294,6 @@ def client_register(request):
                         'notes': 'Зарегистрировался через публичный сайт.',
                     }
                 )
-
             login(request, user)
             messages.success(
                 request,
@@ -309,37 +301,82 @@ def client_register(request):
                 f'Вы успешно зарегистрировались.'
             )
             return redirect('public:profile')
+    else:
+        form = ClientRegisterForm()
 
+    return render(request, 'public/register.html', {'form': form})
+
+@login_required
 def client_profile(request):
-    """Личный кабинет клиента — список его подборок."""
-    if not request.user.is_authenticated:
-        return redirect('accounts:login')
-
+    """Личный кабинет клиента."""
     from apps.selections.models import Selection
-
-    # Подборки привязанные к контакту этого пользователя
-    # Ищем контакт по email пользователя
     from apps.contacts.models import Contact
+    from apps.chat.models import ChatRoom, Message
+
     contacts = Contact.objects.filter(email=request.user.email)
 
     selections = Selection.objects.filter(
         contact__in=contacts
     ).prefetch_related('items__property').order_by('-created_at')
 
+    # Чаты клиента с подсчётом непрочитанных
+    rooms = ChatRoom.objects.filter(
+        client=request.user,
+    ).select_related('agent').prefetch_related('messages')
+
+    rooms_with_info = []
+    for room in rooms:
+        unread = room.messages.filter(
+            is_read=False,
+        ).exclude(sender=request.user).count()
+        last_msg = room.messages.order_by('-created_at').first()
+        rooms_with_info.append({
+            'room': room,
+            'unread': unread,
+            'last_message': last_msg,
+        })
+
+    # Сортируем — сначала с непрочитанными и последними сообщениями
+    rooms_with_info.sort(key=lambda x: (
+        -x['unread'],
+        -(x['last_message'].created_at.timestamp()
+          if x['last_message'] else 0)
+    ))
+
     return render(request, 'public/profile.html', {
         'selections': selections,
         'contacts': contacts,
+        'rooms': rooms_with_info,
     })
 
 
 class PublicLoginView(auth_views.LoginView):
-    """Логин для публичной части — клиенты."""
+    """Универсальная страница входа — для клиентов и сотрудников."""
     template_name = 'public/login.html'
     redirect_authenticated_user = True
 
     def get_success_url(self):
         user = self.request.user
-        # Если роль не CLIENT — редиректим в CRM
-        if user.role != UserProfile.Role.CLIENT:
-            return '/crm/'
-        return '/profile/'
+        # Клиенты → личный кабинет
+        if hasattr(user, 'profile') and user.profile.role == UserProfile.Role.CLIENT:
+            return '/profile/'
+        # Все остальные (admin, manager, agent) → CRM
+        return '/crm/'
+
+    def form_valid(self, form):
+        """Проверяем что аккаунт активен."""
+        user = form.get_user()
+        if not user.is_active:
+            form.add_error(None, 'Аккаунт деактивирован. Обратитесь к администратору.')
+            return self.form_invalid(form)
+        return super().form_valid(form)
+    
+    
+def client_chat_list(request):
+    return _client_chat_list(request)
+
+def client_chat(request, room_pk=None, agent_pk=None):
+    return _client_chat(request, room_pk=room_pk, agent_pk=agent_pk)
+
+def client_chat_poll(request, room_pk):
+    return _client_chat_poll(request, room_pk=room_pk)

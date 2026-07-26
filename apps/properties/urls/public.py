@@ -25,4 +25,11 @@ urlpatterns = [
     path('compare/add/<uuid:pk>/', views.compare_add, name='compare_add'),
     path('compare/remove/<uuid:pk>/', views.compare_remove, name='compare_remove'),
     path('compare/clear/', views.compare_clear, name='compare_clear'),
-]
+    
+    # Чат 
+    path('chat/', account_views.client_chat_list, name='client_chat_list'),
+    path('chat/room/<uuid:room_pk>/', account_views.client_chat, name='client_chat_room'),
+    path('chat/new/', account_views.client_chat, name='client_chat_new'),
+    path('chat/new/<uuid:agent_pk>/', account_views.client_chat, name='client_chat_agent'),
+    path('chat/room/<uuid:room_pk>/poll/', account_views.client_chat_poll, name='client_chat_poll'),
+    ]

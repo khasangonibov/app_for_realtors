@@ -89,6 +89,12 @@ class Contact(UUIDModel, TimeStampedModel):
             models.Index(fields=['agency', 'agent']),
         ]
 
+    def get_agent_display_name(self):
+            if not self.agent:
+                return "—"
+            full = self.agent.get_full_name()
+            return full if full else self.agent.username
+        
     def __str__(self):
         return self.full_name
 

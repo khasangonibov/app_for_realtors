@@ -1,0 +1,157 @@
+{% extends "base.html" %}
+{% load humanize %}
+
+{% block title %}Внутренние чаты{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-4">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3 mb-0">Внутренние чаты</h1>
+        <button type="button" class="btn btn-primary btn-sm"
+                data-bs-toggle="modal" data-bs-target="#newGroupModal">
+            + Новая группа
+        </button>
+    </div>
+
+    <div class="row g-4">
+
+        {# ── Список чатов ────────────────────────────────────────────────── #}
+        <div class="col-lg-5">
+            <div class="bg-white rounded border overflow-hidden">
+                <div class="p-3 border-bottom">
+                    <h2 class="h6 mb-0">Мои чаты</h2>
+                </div>
+                {% if chats %}
+                {% for item in chats %}
+                <a href="{% url 'chat:internal_room' item.chat.pk %}"
+                   class="d-block text-decoration-none text-dark border-bottom p-3
+                          {% if item.unread %}bg-primary bg-opacity-5{% endif %}">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div class="d-flex align-items-center gap-2">
+                            {% if item.chat.is_group %}
+                            <span class="rounded-circle bg-secondary d-flex align-items-center
+                                         justify-content-center text-white"
+                                  style="width: 36px; height: 36px; font-size: 0.9rem;">
+                                👥
+                            </span>
+                            {% else %}
+                            <span class="rounded-circle bg-primary d-flex align-items-center
+                                         justify-content-center text-white fw-bold"
+                                  style="width: 36px; height: 36px;">
+                                {{ item.display_name|first }}
+                            </span>
+                            {% endif %}
+                            <div>
+                                <div class="fw-semibold small">
+                                    {{ item.display_name }}
+                                    {% if item.unread %}
+                                    <span class="badge bg-danger">{{ item.unread }}</span>
+                                    {% endif %}
+                                </div>
+                                {% if item.last_message %}
+                                <div class="text-muted small text-truncate"
+                                     style="max-width: 200px;">
+                                    {{ item.last_message.text }}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% if item.last_message %}
+                        <span class="text-muted" style="font-size: 0.7rem;">
+                            {{ item.last_message.created_at|date:"d.m H:i" }}
+                        </span>
+                        {% endif %}
+                    </div>
+                </a>
+                {% endfor %}
+                {% else %}
+                <div class="text-center py-4 text-muted small">
+                    Чатов пока нет
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        {# ── Список коллег для нового чата ───────────────────────────────── #}
+        <div class="col-lg-7">
+            <div class="bg-white rounded border p-3">
+                <h2 class="h6 mb-3">Написать коллеге</h2>
+                <div class="row g-2">
+                    {% for colleague in colleagues %}
+                    <div class="col-md-6">
+                        <a href="{% url 'chat:internal_start' colleague.pk %}"
+                           class="text-decoration-none">
+                            <div class="border rounded p-2 d-flex align-items-center gap-2 text-dark">
+                                {% if colleague.avatar %}
+                                <img src="{{ colleague.avatar.url }}"
+                                     class="rounded-circle" width="36" height="36"
+                                     style="object-fit: cover;" alt="">
+                                {% else %}
+                                <span class="rounded-circle bg-secondary d-flex align-items-center
+                                             justify-content-center text-white fw-bold"
+                                      style="width: 36px; height: 36px;">
+                                    {{ colleague.first_name|first|default:"У" }}
+                                </span>
+                                {% endif %}
+                                <div>
+                                    <div class="small fw-semibold">
+                                        {{ colleague.get_full_name|default:colleague.username }}
+                                    </div>
+                                    <div class="text-muted small">
+                                        {{ colleague.profile.get_role_display }}
+                                    </div>
+                                </div>
+                            </div>
+                        </a>
+                    </div>
+                    {% empty %}
+                    <div class="text-muted small">В агентстве пока нет других сотрудников.</div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+{# ── Модалка создания группового чата ────────────────────────────────────── #}
+<div class="modal fade" id="newGroupModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" action="{% url 'chat:internal_create_group' %}">
+                {% csrf_token %}
+                <div class="modal-header">
+                    <h5 class="modal-title">Новая группа</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Название группы</label>
+                        <input type="text" name="name" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Участники</label>
+                        {% for colleague in colleagues %}
+                        <div class="form-check">
+                            <input type="checkbox" name="participants"
+                                   value="{{ colleague.pk }}"
+                                   class="form-check-input"
+                                   id="colleague-{{ colleague.pk }}">
+                            <label class="form-check-label" for="colleague-{{ colleague.pk }}">
+                                {{ colleague.get_full_name|default:colleague.username }}
+                            </label>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary"
+                            data-bs-dismiss="modal">Отмена</button>
+                    <button type="submit" class="btn btn-primary">Создать</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

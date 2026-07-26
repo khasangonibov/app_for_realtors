@@ -1,0 +1,109 @@
+{% extends "public_base.html" %}
+{% load humanize %}
+
+{% block title %}Чаты{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <h1 class="h4 mb-4">Мои чаты</h1>
+
+    {# Существующие чаты #}
+    {% if rooms %}
+    <div class="bg-white rounded border mb-4">
+        <div class="p-3 border-bottom">
+            <h2 class="h5 mb-0"></h2>
+        </div>
+        {% for item in rooms %}
+        <a href="{% url 'public:client_chat_room' item.room.pk %}"
+           class="d-block text-decoration-none text-dark border-bottom p-3">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <div class="fw-semibold">
+                        {% if item.room.agent %}
+                            {{ item.room.agent.get_full_name }}
+                            <span class="text-muted small fw-normal">
+                                — {{ item.room.agent.profile.get_role_display }}
+                            </span>
+                        {% else %}
+                            Общий чат агентства
+                        {% endif %}
+                        {% if item.unread %}
+                        <span class="badge bg-danger ms-1">{{ item.unread }}</span>
+                        {% endif %}
+                    </div>
+                    {% if item.last_message %}
+                    <div class="text-muted small text-truncate" style="max-width: 300px;">
+                        {{ item.last_message.text }}
+                    </div>
+                    {% endif %}
+                </div>
+                {% if item.last_message %}
+                <div class="text-muted small">
+                    {{ item.last_message.created_at|date:"d.m H:i" }}
+                </div>
+                {% endif %}
+            </div>
+        </a>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    {# Новый чат #}
+    <div class="bg-white rounded border">
+        <div class="p-3 border-bottom">
+            <h2 class="h5 mb-0">Начать новый чат</h2>
+        </div>
+
+        {# Общий чат #}
+        <div class="p-3 border-bottom">
+            <a href="{% url 'public:client_chat_new' %}"
+               class="btn btn-outline-primary w-100">
+                💬 Написать в агентство (без выбора риелтора)
+            </a>
+            <div class="text-muted small mt-1 text-center">
+                Первый свободный риелтор ответит вам
+            </div>
+        </div>
+
+        {# Список риелторов #}
+        {% if agents %}
+        <div class="p-3">
+            <div class="text-muted small mb-3">Или выберите конкретного риелтора:</div>
+            <div class="row g-3">
+                {% for agent in agents %}
+                <div class="col-md-6">
+                    <a href="{% url 'public:client_chat_agent' agent.pk %}"
+                       class="text-decoration-none">
+                        <div class="border rounded p-3 d-flex align-items-center gap-3
+                                    hover-shadow" style="transition: box-shadow 0.15s;">
+                            {# Аватар #}
+                            {% if agent.avatar %}
+                            <img src="{{ agent.avatar.url }}"
+                                 class="rounded-circle flex-shrink-0"
+                                 width="48" height="48"
+                                 style="object-fit: cover;" alt="">
+                            {% else %}
+                            <div class="rounded-circle bg-primary d-flex align-items-center
+                                        justify-content-center flex-shrink-0 text-white fw-bold"
+                                 style="width: 48px; height: 48px;">
+                                {{ agent.first_name|first|default:"Р" }}
+                            </div>
+                            {% endif %}
+                            <div>
+                                <div class="fw-semibold text-dark">
+                                    {{ agent.get_full_name|default:agent.username }}
+                                </div>
+                                <div class="text-muted small">
+                                    {{ agent.profile.get_role_display }}
+                                </div>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

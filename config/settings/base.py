@@ -62,6 +62,7 @@ LOCAL_APPS = [
     'apps.tasks',        # задачи и напоминания
     'apps.analytics',    # отчёты и аналитика
     'apps.notifications',# уведомления
+    'apps.chat',         # чат
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
@@ -141,9 +142,9 @@ AUTH_PASSWORD_VALIDATORS = [
 AUTH_USER_MODEL = 'accounts.User'
 
 # Куда редиректить после логина/логаута
-LOGIN_URL = '/crm/login/'
+LOGIN_URL = '/login/'
 LOGIN_REDIRECT_URL = '/crm/'
-LOGOUT_REDIRECT_URL = '/crm/login/'
+LOGOUT_REDIRECT_URL = '/login/'
 
 
 # ─── Локализация ──────────────────────────────────────────────────────────────

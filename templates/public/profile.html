@@ -166,7 +166,67 @@
             </div>
             {% endif %}
 
+            {# ── Блок чатов ─────────────────────────────────────────────────────────── #}
+            <div class="col-12 mt-4">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h2 class="h4 mb-0">💬 Мои чаты</h2>
+                    <a href="{% url 'public:client_chat_list' %}"
+                    class="btn btn-primary btn-sm">
+                        + Написать риелтору
+                    </a>
+                </div>
+
+                {% if rooms %}
+                <div class="bg-white rounded border overflow-hidden">
+                    {% for item in rooms %}
+                    <a href="{% url 'public:client_chat_room' item.room.pk %}"
+                    class="d-block text-decoration-none text-dark border-bottom p-3
+                            {% if item.unread %}bg-primary bg-opacity-5{% endif %}">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <div class="fw-semibold">
+                                    {% if item.room.agent %}
+                                        {{ item.room.agent.get_full_name }}
+                                        <span class="text-muted fw-normal small">
+                                            — {{ item.room.agent.profile.get_role_display }}
+                                        </span>
+                                    {% else %}
+                                        Общий чат агентства
+                                    {% endif %}
+                                    {% if item.unread %}
+                                    <span class="badge bg-danger ms-1">{{ item.unread }}</span>
+                                    {% endif %}
+                                </div>
+                                {% if item.last_message %}
+                                <div class="text-muted small">
+                                    {{ item.last_message.text|truncatechars:60 }}
+                                </div>
+                                {% else %}
+                                <div class="text-muted small">Нет сообщений</div>
+                                {% endif %}
+                            </div>
+                            {% if item.last_message %}
+                            <div class="text-muted small flex-shrink-0 ms-3">
+                                {{ item.last_message.created_at|date:"d.m H:i" }}
+                            </div>
+                            {% endif %}
+                        </div>
+                    </a>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="bg-white rounded border p-4 text-center">
+                    <p class="text-muted mb-2">Чатов пока нет</p>
+                    <a href="{% url 'public:client_chat_list' %}"
+                    class="btn btn-outline-primary btn-sm">
+                        Написать риелтору
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+
         </div>
     </div>
 </div>
+
 {% endblock %}

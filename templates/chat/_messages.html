@@ -1,0 +1,43 @@
+{% for message in chat_messages %}
+<div class="d-flex {% if message.sender == request.user %}justify-content-end{% endif %} mb-2">
+    <div class="rounded-3 px-3 py-2 {% if message.sender == request.user %}bg-primary text-white{% else %}bg-white border{% endif %}"
+         style="max-width: 75%;">
+
+        {# Цитата сообщения на которое отвечаем #}
+        {% if message.reply_to %}
+        <div class="rounded px-2 py-1 mb-1
+                    {% if message.sender == request.user %}bg-white bg-opacity-25{% else %}bg-light{% endif %}"
+             style="font-size: 0.75rem; border-left: 3px solid
+                    {% if message.sender == request.user %}rgba(255,255,255,0.6){% else %}#0d6efd{% endif %};">
+            <div class="fw-semibold" style="opacity: 0.85;">
+                {{ message.reply_to.sender.get_full_name|default:message.reply_to.sender.username }}
+            </div>
+            <div class="text-truncate" style="max-width: 250px; opacity: 0.75;">
+                {{ message.reply_to.text }}
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="small">{{ message.text }}</div>
+        <div class="d-flex align-items-center gap-2 mt-1">
+            <button type="button"
+                    class="btn btn-link btn-sm p-0
+                           {% if message.sender == request.user %}text-white-50{% else %}text-muted{% endif %}"
+                    style="font-size: 0.7rem; text-decoration: none;"
+                    onclick="setReply('{{ message.pk }}', '{{ message.sender.get_full_name|default:message.sender.username|escapejs }}', '{{ message.text|truncatechars:60|escapejs }}')">
+                Ответить
+            </button>
+            <span class="{% if message.sender == request.user %}text-white-50{% else %}text-muted{% endif %}"
+                  style="font-size: 0.7rem;">
+                {{ message.created_at|date:"H:i" }}
+                {% if message.sender == request.user and message.is_read %}✓✓
+                {% elif message.sender == request.user %}✓{% endif %}
+            </span>
+        </div>
+    </div>
+</div>
+{% empty %}
+<div class="text-center text-muted py-5 small">
+    Напишите первое сообщение
+</div>
+{% endfor %}

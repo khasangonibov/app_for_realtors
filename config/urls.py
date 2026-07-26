@@ -20,6 +20,7 @@ urlpatterns = [
     # ── Публичные страницы (без авторизации) ──────────────────────────────────
     path('', include('apps.properties.urls.public', namespace='public')),
     path('', include('apps.selections.urls.public', namespace='selection_public')),
+    
 
     # ── CRM-интерфейс (требует авторизации) ───────────────────────────────────
     path('crm/', include([
@@ -30,6 +31,7 @@ urlpatterns = [
         path('', include('apps.selections.urls.crm', namespace='selections')),
         path('', include('apps.tasks.urls', namespace='tasks')),
         path('', include('apps.analytics.urls', namespace='analytics')),
+        path('', include('apps.chat.urls', namespace='chat')),
     ])),
 
     # ── REST API ───────────────────────────────────────────────────────────────

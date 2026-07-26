@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+{% load humanize %}
+
+{% block title %}Чаты с клиентами{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-4">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">Чаты с клиентами</h1>
+            {% if total_unread %}
+            <span class="text-danger small">
+                {{ total_unread }} непрочитанных сообщений
+            </span>
+            {% endif %}
+        </div>
+        <span class="badge bg-secondary">{{ rooms|length }}</span>
+    </div>
+
+    {% if rooms %}
+    <div class="bg-white rounded border overflow-hidden">
+        {% for item in rooms %}
+        <div class="border-bottom {% if item.unread %}bg-primary bg-opacity-5{% endif %}">
+            <div class="p-3 d-flex justify-content-between align-items-start">
+                <a href="{% url 'chat:agent_room' item.room.pk %}"
+                   class="text-decoration-none text-dark flex-grow-1">
+                    <div class="d-flex align-items-center gap-3">
+
+                        {# Аватар клиента #}
+                        <div class="rounded-circle bg-primary d-flex align-items-center
+                                    justify-content-center flex-shrink-0 text-white fw-bold"
+                             style="width: 44px; height: 44px;">
+                            {{ item.room.client.first_name|first|default:"К" }}
+                        </div>
+
+                        <div class="flex-grow-1">
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="fw-semibold">
+                                    {{ item.room.client.get_full_name|default:item.room.client.username }}
+                                </span>
+                                {% if item.unread %}
+                                <span class="badge bg-danger">{{ item.unread }}</span>
+                                {% endif %}
+                                {% if item.is_general %}
+                                <span class="badge bg-warning text-dark">
+                                    Общий — без риелтора
+                                </span>
+                                {% endif %}
+                            </div>
+                            <div class="text-muted small">
+                                {{ item.room.client.email }}
+                            </div>
+                            {% if item.last_message %}
+                            <div class="text-muted small text-truncate"
+                                 style="max-width: 400px;">
+                                {{ item.last_message.text }}
+                            </div>
+                            {% else %}
+                            <div class="text-muted small">Нет сообщений</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </a>
+
+                <div class="d-flex flex-column align-items-end gap-2 ms-3 flex-shrink-0">
+                    {% if item.last_message %}
+                    <div class="text-muted small">
+                        {{ item.last_message.created_at|date:"d.m H:i" }}
+                    </div>
+                    {% endif %}
+
+                    {% if not item.room.agent %}
+                    {# Кнопка взять чат себе #}
+                    <form method="post"
+                          action="{% url 'chat:agent_claim' item.room.pk %}">
+                        {% csrf_token %}
+                        <button type="submit"
+                                class="btn btn-success btn-sm">
+                            Взять себе
+                        </button>
+                    </form>
+                    {% else %}
+                    <div class="text-muted small">
+                        {{ item.room.agent.get_full_name }}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    {% else %}
+    <div class="text-center py-5">
+        <div style="font-size: 3rem;">💬</div>
+        <h3 class="mt-3">Чатов пока нет</h3>
+        <p class="text-muted">
+            Когда клиенты напишут через личный кабинет —
+            их сообщения появятся здесь
+        </p>
+    </div>
+    {% endif %}
+
+</div>
+{% endblock %}
