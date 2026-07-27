@@ -33,6 +33,18 @@
                         </label>
                         {{ form.title }}
                     </div>
+
+                    {# Поле исполнителя — видно только менеджеру/админу #}
+                    {% if form.agent %}
+                    <div class="col-12">
+                        <label class="form-label">
+                            {{ form.agent.label }} <span class="text-danger">*</span>
+                        </label>
+                        {{ form.agent }}
+                        <div class="form-text">Выберите сотрудника, которому назначаете задачу</div>
+                    </div>
+                    {% endif %}
+
                     <div class="col-md-4">
                         <label class="form-label">{{ form.task_type.label }}</label>
                         {{ form.task_type }}

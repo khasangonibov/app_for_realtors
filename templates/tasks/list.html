@@ -33,6 +33,9 @@
                     </span>
                     <div class="text-muted small mt-1">
                         {{ task.get_task_type_display }}
+                        {% if not request.user.is_agent %}
+                            · Исполнитель: {{ task.agent.get_full_name|default:task.agent.username }}
+                        {% endif %}
                         {% if task.contact %} · {{ task.contact.full_name }}{% endif %}
                         {% if task.related_property %} · {{ task.related_property.city }}{% endif %}
                     </div>
@@ -49,6 +52,44 @@
                         {% csrf_token %}
                         <button type="submit" class="btn btn-success btn-sm">
                             Выполнено
+                        </button>
+                    </form>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        {# ── Ожидают подтверждения (видно только постановщику) ──────────────────── #}
+        {% if pending_approval %}
+        <div class="mb-4">
+            <h2 class="h5 text-warning mb-3">
+                🔔 Ожидают подтверждения ({{ pending_approval|length }})
+            </h2>
+            {% for task in pending_approval %}
+            <div class="bg-white rounded border border-warning mb-2 p-3 d-flex justify-content-between align-items-center">
+                <div>
+                    <span class="fw-semibold">{{ task.title }}</span>
+                    <div class="text-muted small mt-1">
+                        Исполнитель: {{ task.agent.get_full_name|default:task.agent.username }}
+                        {% if task.contact %} · {{ task.contact.full_name }}{% endif %}
+                    </div>
+                    <div class="text-muted small">
+                        Отмечено выполненным: {{ task.done_at|date:"d.m.Y H:i" }}
+                    </div>
+                </div>
+                <div class="d-flex gap-2">
+                    <form method="post" action="{% url 'tasks:approve' task.pk %}">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-success btn-sm">
+                            ✓ Подтвердить
+                        </button>
+                    </form>
+                    <form method="post" action="{% url 'tasks:reject' task.pk %}">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-outline-danger btn-sm"
+                                onclick="return confirm('Вернуть задачу в работу?')">
+                            Отклонить
                         </button>
                     </form>
                 </div>
@@ -81,16 +122,21 @@
                     </div>
                 </div>
                 <div class="d-flex gap-2">
-                    <a href="{% url 'tasks:edit' task.pk %}"
-                       class="btn btn-outline-secondary btn-sm">
+                    <a href="{% url 'tasks:edit' task.pk %}" class="btn btn-outline-secondary btn-sm">
                         Изменить
                     </a>
+                    {% if not task.is_done %}
                     <form method="post" action="{% url 'tasks:done' task.pk %}">
                         {% csrf_token %}
                         <button type="submit" class="btn btn-success btn-sm">
                             Выполнено
                         </button>
                     </form>
+                    {% else %}
+                    <span class="badge bg-warning text-dark align-self-center">
+                        Ожидает подтверждения
+                    </span>
+                    {% endif %}
                 </div>
             </div>
             {% endfor %}

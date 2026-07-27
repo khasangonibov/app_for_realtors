@@ -20,29 +20,27 @@ class Task(UUIDModel, TimeStampedModel):
         OTHER = 'other', 'Другое'
 
     agency = models.ForeignKey(
-        Agency,
-        on_delete=models.CASCADE,
-        related_name='tasks',
-        verbose_name='Агентство',
+        Agency, on_delete=models.CASCADE,
+        related_name='tasks', verbose_name='Агентство',
     )
     agent = models.ForeignKey(
-        User,
-        on_delete=models.CASCADE,
-        related_name='tasks',
-        verbose_name='Ответственный',
+        User, on_delete=models.CASCADE,
+        related_name='tasks', verbose_name='Ответственный',
+    )
+    # Кто назначил задачу — если совпадает с agent, значит поставил себе сам
+    assigned_by = models.ForeignKey(
+        User, on_delete=models.SET_NULL,
+        related_name='assigned_tasks', verbose_name='Кто назначил',
+        null=True, blank=True,
     )
     contact = models.ForeignKey(
-        Contact,
-        on_delete=models.SET_NULL,
-        related_name='tasks',
-        verbose_name='Контакт',
+        Contact, on_delete=models.SET_NULL,
+        related_name='tasks', verbose_name='Контакт',
         null=True, blank=True,
     )
     related_property = models.ForeignKey(
-        Property,
-        on_delete=models.SET_NULL,
-        related_name='tasks',
-        verbose_name='Объект',
+        Property, on_delete=models.SET_NULL,
+        related_name='tasks', verbose_name='Объект',
         null=True, blank=True,
     )
 
@@ -50,17 +48,27 @@ class Task(UUIDModel, TimeStampedModel):
     description = models.TextField('Описание', blank=True)
     task_type = models.CharField(
         'Тип', max_length=20,
-        choices=TaskType.choices,
-        default=TaskType.OTHER,
+        choices=TaskType.choices, default=TaskType.OTHER,
     )
     priority = models.CharField(
         'Приоритет', max_length=10,
-        choices=Priority.choices,
-        default=Priority.NORMAL,
+        choices=Priority.choices, default=Priority.NORMAL,
     )
     due_date = models.DateTimeField('Срок выполнения')
-    is_done = models.BooleanField('Выполнена', default=False)
-    done_at = models.DateTimeField('Выполнена в', null=True, blank=True)
+
+    # Риелтор отмечает что сделал — но задача ещё не считается закрытой,
+    # если требуется подтверждение
+    is_done = models.BooleanField('Отмечено выполненным', default=False)
+    done_at = models.DateTimeField('Отмечено выполненным в', null=True, blank=True)
+
+    # Подтверждение постановщиком — обязательно только если assigned_by != agent
+    is_approved = models.BooleanField('Подтверждено руководителем', default=False)
+    approved_at = models.DateTimeField('Подтверждено в', null=True, blank=True)
+    approved_by = models.ForeignKey(
+        User, on_delete=models.SET_NULL,
+        related_name='approved_tasks', verbose_name='Кто подтвердил',
+        null=True, blank=True,
+    )
 
     class Meta:
         verbose_name = 'Задача'
@@ -76,6 +84,23 @@ class Task(UUIDModel, TimeStampedModel):
 
     @property
     def is_overdue(self):
-        """Задача просрочена если срок прошёл а она не выполнена."""
         from django.utils import timezone
         return not self.is_done and self.due_date < timezone.now()
+
+    @property
+    def needs_approval(self):
+        """Задача требует подтверждения, если её назначил кто-то другой
+        (не сам риелтор себе), и она ещё не подтверждена."""
+        return (
+            self.assigned_by_id is not None
+            and self.assigned_by_id != self.agent_id
+        )
+
+    @property
+    def is_fully_completed(self):
+        """Задача считается полностью завершённой (попадает в 'выполненные'),
+        только когда либо подтверждение не требуется, либо оно получено.
+        """
+        if not self.needs_approval:
+            return self.is_done
+        return self.is_done and self.is_approved
