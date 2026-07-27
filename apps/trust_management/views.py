@@ -62,9 +62,13 @@ def contract_create(request):
 
 @crm_required
 def contract_edit(request, pk):
-    contract = get_object_or_404(
-        ManagementContract, pk=pk, agency=request.user.agency
-    )
+    queryset = ManagementContract.objects.filter(agency=request.user.agency)
+
+    if request.user.is_agent:
+        queryset = queryset.filter(agent=request.user)
+
+    contract = get_object_or_404(queryset, pk=pk)
+    
     if request.method == 'POST':
         form = ManagementContractForm(
             request.POST, instance=contract, agency=request.user.agency
@@ -88,9 +92,13 @@ def contract_edit(request, pk):
 @crm_required
 def contract_detail(request, pk):
     """Карточка договора — финансы, документы, журнал."""
-    contract = get_object_or_404(
-        ManagementContract, pk=pk, agency=request.user.agency
-    )
+    queryset = ManagementContract.objects.filter(agency=request.user.agency)
+
+    # Обычный риелтор видит только свои договоры управления
+    if request.user.is_agent:
+        queryset = queryset.filter(agent=request.user)
+
+    contract = get_object_or_404(queryset, pk=pk)
 
     transactions = contract.transactions.all()
     documents = contract.documents.select_related('uploaded_by')
@@ -149,9 +157,12 @@ def contract_detail(request, pk):
 
 @crm_required
 def transaction_delete(request, pk, transaction_pk):
-    contract = get_object_or_404(
-        ManagementContract, pk=pk, agency=request.user.agency
-    )
+    queryset = ManagementContract.objects.filter(agency=request.user.agency)
+    if request.user.is_agent:
+        queryset = queryset.filter(agent=request.user)
+    
+    contract = get_object_or_404(queryset, pk=pk)
+    
     transaction = get_object_or_404(
         Transaction, pk=transaction_pk, contract=contract
     )
@@ -167,9 +178,12 @@ def transaction_delete(request, pk, transaction_pk):
 
 @crm_required
 def document_delete(request, pk, document_pk):
-    contract = get_object_or_404(
-        ManagementContract, pk=pk, agency=request.user.agency
-    )
+    queryset = ManagementContract.objects.filter(agency=request.user.agency)
+    if request.user.is_agent:
+        queryset = queryset.filter(agent=request.user)
+        
+    contract = get_object_or_404(queryset, pk=pk)
+    
     document = get_object_or_404(
         ManagementDocument, pk=document_pk, contract=contract
     )
@@ -184,9 +198,12 @@ def document_delete(request, pk, document_pk):
 @crm_required
 def contract_report(request, pk):
     """Отчёт для клиента — доходы/расходы за период."""
-    contract = get_object_or_404(
-        ManagementContract, pk=pk, agency=request.user.agency
-    )
+    queryset = ManagementContract.objects.filter(agency=request.user.agency)
+
+    if request.user.is_agent:
+        queryset = queryset.filter(agent=request.user)
+
+    contract = get_object_or_404(queryset, pk=pk)
 
     date_from = request.GET.get('date_from', '')
     date_to = request.GET.get('date_to', '')

@@ -13,9 +13,6 @@ def selection_list(request):
         agency=request.user.agency
     ).select_related('contact', 'agent').prefetch_related('items')
 
-    if request.user.is_agent:
-        queryset = queryset.filter(agent=request.user)
-
     return render(request, 'selections/crm/list.html', {
         'selections': queryset,
         'total_count': queryset.count(),
@@ -46,13 +43,26 @@ def selection_create(request):
 
 @crm_required
 def selection_detail(request, pk):
-    """Страница подборки в CRM — список объектов + форма добавления."""
+    """Страница подборки в CRM.
+    Просматривать может любой сотрудник, добавлять/удалять объекты —
+    только создатель подборки или менеджер/админ.
+    """
     selection = get_object_or_404(
         Selection, pk=pk, agency=request.user.agency
     )
+
+    can_edit = (
+        not request.user.is_agent
+        or selection.agent == request.user
+    )
+
     items = selection.items.select_related('property')
 
     if request.method == 'POST':
+        if not can_edit:
+            messages.error(request, 'Редактировать подборку может только её создатель.')
+            return redirect('selections:detail', pk=pk)
+
         item_form = SelectionItemForm(
             request.POST,
             agency=request.user.agency,
@@ -74,15 +84,24 @@ def selection_detail(request, pk):
         'selection': selection,
         'items': items,
         'item_form': item_form,
+        'can_edit': can_edit,
     })
 
 
 @crm_required
 def selection_item_delete(request, pk, item_pk):
-    """Удаление объекта из подборки."""
     selection = get_object_or_404(
         Selection, pk=pk, agency=request.user.agency
     )
+
+    can_edit = (
+        not request.user.is_agent
+        or selection.agent == request.user
+    )
+    if not can_edit:
+        messages.error(request, 'Удалять объекты может только создатель подборки.')
+        return redirect('selections:detail', pk=pk)
+
     item = get_object_or_404(SelectionItem, pk=item_pk, selection=selection)
 
     if request.method == 'POST':

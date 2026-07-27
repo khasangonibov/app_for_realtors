@@ -17,8 +17,6 @@ def deal_board(request):
         agency=request.user.agency
     ).select_related('property', 'buyer_contact', 'agent')
 
-    if request.user.is_agent:
-        queryset = queryset.filter(agent=request.user)
 
     # Группируем сделки по стадиям для kanban
     # Исключаем закрытые и отменённые — они в отдельном списке
@@ -71,9 +69,15 @@ def deal_create(request):
 
 @crm_required
 def deal_edit(request, pk):
+    """Редактировать может только назначенный агент или менеджер/админ."""
     deal = get_object_or_404(
         Deal, pk=pk, agency=request.user.agency
     )
+
+    # Проверка прав на редактирование
+    if request.user.is_agent and deal.agent != request.user:
+        messages.error(request, 'Редактировать сделку может только назначенный риелтор.')
+        return redirect('deals:board')
 
     if request.method == 'POST':
         form = DealForm(request.POST, instance=deal, agency=request.user.agency)

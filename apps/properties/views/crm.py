@@ -5,7 +5,7 @@ CRM-views для работы с объектами недвижимости.
 
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib import messages
-from django.db.models import Q as models_Q
+from django.db.models import Q 
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 from django.core.paginator import Paginator
@@ -23,9 +23,6 @@ def property_list(request):
     queryset = Property.objects.filter(
         agency=request.user.agency
     ).select_related('agent').prefetch_related('photos')
-
-    if request.user.is_agent:
-        queryset = queryset.filter(agent=request.user)
 
     form = PropertyFilterForm(request.GET)
     if form.is_valid():

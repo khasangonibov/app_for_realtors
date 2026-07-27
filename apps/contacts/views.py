@@ -18,8 +18,6 @@ def contact_list(request):
         agency=request.user.agency
     ).select_related('agent')
 
-    if request.user.is_agent:
-        queryset = queryset.filter(agent=request.user)
 
     search = request.GET.get('search', '').strip()
     if search:

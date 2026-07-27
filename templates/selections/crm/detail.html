@@ -78,6 +78,7 @@
                                 {% endif %}
 
                                 {# Удалить объект из подборки #}
+                                {% if can_edit %}
                                 <form method="post"
                                       action="{% url 'selections:item_delete' selection.pk item.pk %}"
                                       class="d-inline">
@@ -88,6 +89,7 @@
                                         Удалить
                                     </button>
                                 </form>
+                                {% endif %}
                             </div>
                         </div>
                     </div>
@@ -102,6 +104,7 @@
             </div>
 
             {# ── Форма добавления объекта ────────────────────────────────── #}
+            {% if can_edit %}
             <div class="col-lg-4">
                 <div class="bg-white rounded border p-4 position-sticky" style="top: 20px;">
                     <h2 class="h6 mb-3">Добавить объект</h2>
@@ -121,6 +124,11 @@
                     </form>
                 </div>
             </div>
+            {% else %}
+            <div class="alert alert-info">
+                Только создатель подборки может добавлять и удалять объекты.
+            </div>
+            {% endif %}
 
         </div>
     </div>
