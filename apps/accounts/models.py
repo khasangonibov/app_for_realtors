@@ -1,5 +1,5 @@
 import uuid
-
+from django.core.exceptions import ValidationError
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 
@@ -7,14 +7,13 @@ from apps.core.models import UUIDModel, TimeStampedModel
 
 
 class Agency(UUIDModel, TimeStampedModel):
-    """Агентство недвижимости — верхний уровень иерархии.
-    Все данные (объекты, клиенты, сделки) привязаны к агентству.
+    """Агентство недвижимости.
+    
+    Система работает по принципу «один сервер — одно агентство»:
+    вторую запись создать нельзя, save() блокирует это на уровне модели.
     """
     name = models.CharField('Название', max_length=255)
     slug = models.SlugField('Slug', unique=True)
-    # slug используется в публичных ссылках:
-    # /object/{agency.slug}/{property_id}/{token}/
-
     logo = models.ImageField('Логотип', upload_to='agency/logos/', blank=True)
     city = models.CharField('Город', max_length=100, blank=True)
     phone = models.CharField('Телефон', max_length=20, blank=True)
@@ -27,6 +26,27 @@ class Agency(UUIDModel, TimeStampedModel):
 
     def __str__(self):
         return self.name
+
+    def save(self, *args, **kwargs):
+        """Разрешает только одну запись Agency в системе.
+        Обновление существующей записи (тот же pk) — можно всегда.
+        Создание новой при уже существующей — запрещено.
+        """
+        if not self.pk and Agency.objects.exists():
+            raise ValidationError(
+                'В системе уже есть агентство. '
+                'Эта CRM работает по принципу «один сервер — одно агентство», '
+                'создание второй записи запрещено.'
+            )
+        super().save(*args, **kwargs)
+
+    @classmethod
+    def get_solo(cls):
+        """Возвращает единственную запись агентства.
+        Используется везде вместо Agency.objects.first(),
+        чтобы явно выразить что агентство ровно одно.
+        """
+        return cls.objects.first()
 
 
 class User(AbstractUser):
@@ -42,15 +62,16 @@ class User(AbstractUser):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
 
     agency = models.ForeignKey(
-        Agency,
-        on_delete=models.CASCADE,
-        related_name='users',
-        verbose_name='Агентство',
-        null=True,  # null=True нужен для суперадмина и для клиентов (без агентства)
-        blank=True,
+        Agency, on_delete=models.CASCADE, related_name='users',
+        verbose_name='Агентство', null=True, blank=True,
     )
+    email = models.EmailField('Email', unique=True, blank=True)
     phone = models.CharField('Телефон', max_length=20, blank=True)
     avatar = models.ImageField('Аватар', upload_to='users/avatars/', blank=True)
+
+    # Логинимся по email, а не по username
+    USERNAME_FIELD = 'email'
+    REQUIRED_FIELDS = ['username']  
 
     class Meta:
         verbose_name = 'Пользователь'
@@ -90,8 +111,8 @@ class UserProfile(UUIDModel):
 
     class Role(models.TextChoices):
         ADMIN = 'admin', 'Администратор'           # полный доступ
-        MANAGER = 'manager', 'Руководитель'        # аналитика, все объекты
-        AGENT = 'agent', 'Риелтор'                 # только свои объекты
+        MANAGER = 'manager', 'Руководитель'        # добавление сотрудников, доп. аналитика по сотрудникам, все объекты
+        AGENT = 'agent', 'Риелтор'                 # все публичные объекты, объекты находящиеся в доверительном управлении только свои
         CLIENT = 'client', 'Внешний пользователь'  # авторизованный клиент
 
     user = models.OneToOneField(

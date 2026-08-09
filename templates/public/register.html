@@ -43,14 +43,13 @@
                                 {{ form.first_name }}
                             </div>
                             <div class="col-12">
-                                <label class="form-label small">{{ form.username.label }} <span class="text-danger">*</span></label>
-                                {{ form.username }}
-                            </div>
-                            <div class="col-12">
-                                <label class="form-label small">{{ form.email.label }}</label>
+                                <label class="form-label small">
+                                    {{ form.email.label }}
+                                    <span class="text-danger">*</span>
+                                </label>
                                 {{ form.email }}
                                 <div class="form-text">
-                                    По email риелтор сможет привязать к вам подборки
+                                    По email риелтор сможет прислать к вам подборки
                                 </div>
                             </div>
                             <div class="col-12">
@@ -60,6 +59,7 @@
                             <div class="col-12">
                                 <label class="form-label small">{{ form.password1.label }} <span class="text-danger">*</span></label>
                                 {{ form.password1 }}
+                                <div class="form-text">{{ form.password1.help_text }}</div>
                             </div>
                             <div class="col-12">
                                 <label class="form-label small">{{ form.password2.label }} <span class="text-danger">*</span></label>

@@ -1,12 +1,6 @@
 from django.utils import timezone
 from django.db.models import Q as models_Q
 
-"""
-Context processor — автоматически добавляет данные агентства
-в контекст всех шаблонов. Это удобно, например, для шапки сайта
-или футера, где нужно показать название/логотип агентства
-независимо от того, какая view рендерит страницу.
-"""
 
 
 def agency_context(request):

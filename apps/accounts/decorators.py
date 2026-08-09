@@ -17,7 +17,7 @@ def crm_required(view_func):
     def wrapper(request, *args, **kwargs):
         # Сначала проверяем авторизацию
         if not request.user.is_authenticated:
-            return redirect('accounts:login')
+            return redirect('public:public_login')
 
         # Проверяем что пользователь не клиент
         if request.user.role == UserProfile.Role.CLIENT:
@@ -25,7 +25,7 @@ def crm_required(view_func):
                 request,
                 'Доступ в CRM закрыт для внешних пользователей.'
             )
-            return redirect('accounts:login')
+            return redirect('public:public_login')
 
         # Проверяем что у пользователя есть агентство
         if not request.user.agency:
@@ -34,7 +34,7 @@ def crm_required(view_func):
                 'Ваш аккаунт не привязан к агентству. '
                 'Обратитесь к администратору.'
             )
-            return redirect('accounts:login')
+            return redirect('public:public_login')
 
         return view_func(request, *args, **kwargs)
     return wrapper
@@ -45,7 +45,7 @@ def manager_required(view_func):
     @wraps(view_func)
     def wrapper(request, *args, **kwargs):
         if not request.user.is_authenticated:
-            return redirect('accounts:login')
+            return redirect('public:public_login')
 
         if request.user.role not in [
             UserProfile.Role.ADMIN,

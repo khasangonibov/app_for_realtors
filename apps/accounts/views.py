@@ -3,8 +3,9 @@ from django.contrib import messages
 from django.shortcuts import render, get_object_or_404, redirect
 from django.utils import timezone
 from django.utils.crypto import get_random_string
+from django.utils.decorators import method_decorator
 from django.contrib.auth.decorators import login_required
-
+from django.views.decorators.cache import never_cache
 
 from apps.accounts.decorators import crm_required, manager_required
 from apps.chat.views import (
@@ -14,24 +15,8 @@ from apps.chat.views import (
     client_chat_poll as _client_chat_poll,
 )
 
-from .forms import CRMLoginForm
 from .models import User, UserProfile
 
-class CRMLoginView(auth_views.LoginView):
-    template_name = 'accounts/login.html'
-    form_class = CRMLoginForm
-    redirect_authenticated_user = True
-
-    def form_valid(self, form):
-        user = form.get_user()
-        if hasattr(user, 'profile') and user.profile.role == UserProfile.Role.CLIENT:
-            form.add_error(None, 'Для клиентов вход через главную страницу сайта.')
-            return self.form_invalid(form)
-        return super().form_valid(form)
-
-
-class CRMLogoutView(auth_views.LogoutView):
-    pass
 
 
 @crm_required
@@ -173,14 +158,16 @@ def users_list(request):
 @crm_required
 @manager_required
 def user_invite(request):
+    from .models import Agency
+
     if request.method == 'POST':
         from .forms import UserInviteForm
         form = UserInviteForm(request.POST)
         if form.is_valid():
-            from django.utils.crypto import get_random_string
             temp_password = get_random_string(12)
             user = form.save(commit=False)
-            user.agency = request.user.agency
+            user.username = form.cleaned_data['email']  # email как логин
+            user.agency = Agency.get_solo()
             user.set_password(temp_password)
             user.save()
             UserProfile.objects.create(
@@ -190,7 +177,7 @@ def user_invite(request):
             messages.success(
                 request,
                 f'Сотрудник {user.get_full_name()} создан. '
-                f'Временный пароль: {temp_password}'
+                f'Логин: {user.email}. Временный пароль: {temp_password}'
             )
             return redirect('accounts:users_list')
     else:
@@ -199,7 +186,7 @@ def user_invite(request):
 
     return render(request, 'accounts/user_invite.html', {
         'form': form,
-        'title': 'Пригласить сотрудника',
+        'title': 'Добавить сотрудника',
     })
 
 
@@ -261,7 +248,7 @@ def user_reset_password(request, pk):
     return redirect('accounts:users_list')
 
 
-
+@never_cache
 def client_register(request):
     """Регистрация внешнего пользователя (клиента)."""
     from .forms import ClientRegisterForm
@@ -279,7 +266,8 @@ def client_register(request):
                 user=user,
                 role=UserProfile.Role.CLIENT,
             )
-            agency = Agency.objects.first()
+
+            agency = Agency.get_solo()
             if agency:
                 Contact.objects.get_or_create(
                     email=user.email,
@@ -294,6 +282,7 @@ def client_register(request):
                         'notes': 'Зарегистрировался через публичный сайт.',
                     }
                 )
+
             login(request, user)
             messages.success(
                 request,
@@ -305,6 +294,7 @@ def client_register(request):
         form = ClientRegisterForm()
 
     return render(request, 'public/register.html', {'form': form})
+
 
 @login_required
 def client_profile(request):
@@ -349,7 +339,7 @@ def client_profile(request):
         'rooms': rooms_with_info,
     })
 
-
+@method_decorator(never_cache, name='dispatch')
 class PublicLoginView(auth_views.LoginView):
     """Универсальная страница входа — для клиентов и сотрудников."""
     template_name = 'public/login.html'

@@ -42,7 +42,7 @@
 
                 <hr>
 
-                <form method="post" action="{% url 'accounts:logout' %}">
+                <form method="post" action="{% url 'public:logout' %}">
                     {% csrf_token %}
                     <button type="submit" class="btn btn-outline-danger btn-sm w-100">
                         Выйти

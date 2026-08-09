@@ -107,12 +107,10 @@
                 {% if agency %}{{ agency.name }}{% else %}Недвижимость{% endif %}
             </a>
             <div class="d-flex align-items-center gap-3">
-                {# Кнопка назад — используем history.back() для возврата
-                на предыдущую страницу (каталог с сохранёнными фильтрами) #}
-                {% if request.resolver_match.url_name != 'catalog' %}
+                {% if request.resolver_match.url_name == 'property_detail' or request.resolver_match.url_name == 'compare' %}
                 <button onclick="history.back()"
                         class="btn btn-outline-light btn-sm">
-                    ↩Назад
+                    ← Назад
                 </button>
                 {% endif %}
                 <a href="{% url 'public:catalog' %}" class="nav-link">Каталог</a>

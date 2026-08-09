@@ -16,7 +16,7 @@
                             {{ error }}
                         {% endfor %}
                         {% if not form.non_field_errors %}
-                            Неверный логин или пароль.
+                            Неверный Email или пароль.
                         {% endif %}
                     </div>
                     {% endif %}
@@ -25,7 +25,7 @@
                         {% csrf_token %}
                         <input type="hidden" name="next" value="{{ next }}">
                         <div class="mb-3">
-                            <label class="form-label small">Логин</label>
+                            <label class="form-label small">Email</label>
                             <input type="text" name="username"
                                    class="form-control"
                                    autofocus required>
@@ -39,6 +39,11 @@
                             Войти
                         </button>
                     </form>
+                    <div class="text-center mt-3">
+                        <a href="{% url 'public:password_reset' %}" class="small text-muted">
+                            Забыли пароль?
+                        </a>
+                    </div>
 
                     <hr>
                     <p class="text-center small mb-0">

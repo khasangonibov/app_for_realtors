@@ -22,12 +22,17 @@ class UserProfileInline(admin.StackedInline):
 
 @admin.register(User)
 class UserAdmin(BaseUserAdmin):
-    # Расширяем стандартную Django UserAdmin, добавляя наш inline-профиль
     inlines = (UserProfileInline,)
-    list_display = ('username', 'email', 'agency', 'is_staff')
-    list_filter = ('agency', 'is_staff', 'is_active')
+    list_display = ('username', 'email', 'get_role_display', 'agency', 'is_staff', 'is_active')
+    list_filter = ('agency', 'is_staff', 'is_active', 'profile__role')
 
-    # Добавляем agency и phone в форму редактирования
     fieldsets = BaseUserAdmin.fieldsets + (
         ('Дополнительно', {'fields': ('agency', 'phone', 'avatar')}),
     )
+
+    def get_role_display(self, obj):
+        """Показывает роль пользователя в списке — читаемо и сразу видно."""
+        if hasattr(obj, 'profile'):
+            return obj.profile.get_role_display()
+        return '—'
+    get_role_display.short_description = 'Роль'

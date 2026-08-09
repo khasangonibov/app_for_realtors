@@ -27,12 +27,12 @@ class TestCRMLogin:
 
     def test_login_page_loads(self, client):
         """Страница логина должна открываться без ошибок."""
-        response = client.get(reverse('accounts:login'))
+        response = client.get(reverse('public:public_login'))
         assert response.status_code == 200
 
     def test_agent_can_login(self, client, agent_user):
         """Риелтор должен успешно авторизоваться и попасть на дашборд."""
-        response = client.post(reverse('accounts:login'), {
+        response = client.post(reverse('public:public_login'), {
             'username': 'test_agent',
             'password': 'testpass123',
         })
@@ -41,7 +41,7 @@ class TestCRMLogin:
 
     def test_client_cannot_login_to_crm(self, client, client_user):
         """Клиент (роль CLIENT) не должен иметь доступ к CRM-логину."""
-        response = client.post(reverse('accounts:login'), {
+        response = client.post(reverse('public:public_login'), {
             'username': 'test_client',
             'password': 'testpass123',
         })
@@ -51,7 +51,7 @@ class TestCRMLogin:
 
     def test_wrong_password_shows_error(self, client, agent_user):
         """Неверный пароль должен показывать форму с ошибкой."""
-        response = client.post(reverse('accounts:login'), {
+        response = client.post(reverse('public:public_login'), {
             'username': 'test_agent',
             'password': 'wrongpassword',
         })
