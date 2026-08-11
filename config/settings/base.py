@@ -49,6 +49,14 @@ THIRD_PARTY_APPS = [
     'django_celery_beat',          # расписание задач в БД
     'import_export',               # экспорт/импорт Excel
     'storages',                    # S3 хранилище
+    
+    # OAuth вход для клиентов
+    'django.contrib.sites',
+    'allauth',
+    'allauth.account',
+    'allauth.socialaccount',
+    'allauth.socialaccount.providers.github',
+    'allauth.socialaccount.providers.vk',
 ]
 
 LOCAL_APPS = [
@@ -68,19 +76,26 @@ LOCAL_APPS = [
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
 
+SITE_ID = 1
+
+AUTHENTICATION_BACKENDS = [
+    'django.contrib.auth.backends.ModelBackend',
+    'allauth.account.auth_backends.AuthenticationBackend',
+]
 
 # ─── Middleware ────────────────────────────────────────────────────────────────
 # Порядок важен! corsheaders должен быть первым.
 MIDDLEWARE = [
-    'corsheaders.middleware.CorsMiddleware',           # CORS (ставим первым)
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'allauth.account.middleware.AccountMiddleware',  
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'django_htmx.middleware.HtmxMiddleware',           # добавляет request.htmx
+    'django_htmx.middleware.HtmxMiddleware',
 ]
 
 ROOT_URLCONF = 'config.urls'
@@ -247,4 +262,40 @@ CELERY_BEAT_SCHEDULE = {
         'schedule': crontab(hour=9, minute=0),
     },
 }
+
+# ── django-allauth: OAuth вход через соцсети (только для клиентов) ────────
+SOCIALACCOUNT_PROVIDERS = {
+    'github': {
+        'APP': {
+            'client_id': env('GITHUB_CLIENT_ID', default=''),
+            'secret': env('GITHUB_CLIENT_SECRET', default=''),
+            'key': '',
+        },
+        'SCOPE': ['user:email'],
+    },
+    'vk': {
+        'APP': {
+            'client_id': env('VK_CLIENT_ID', default=''),
+            'secret': env('VK_CLIENT_SECRET', default=''),
+            'key': '',
+        },
+    },
+}
+
+
+VK_OAUTH_ENABLED = bool(env('VK_CLIENT_ID', default=''))
+
+# Отключаем встроенные страницы allauth (логин/регистрация/подтверждение) —
+# используем только сам OAuth-флоу, свои формы уже написаны
+SOCIALACCOUNT_AUTO_SIGNUP = True
+SOCIALACCOUNT_EMAIL_REQUIRED = True
+SOCIALACCOUNT_EMAIL_VERIFICATION = 'none'
+SOCIALACCOUNT_LOGIN_ON_GET = True  # сразу редиректит на провайдера, без промежуточной страницы allauth
+
+ACCOUNT_EMAIL_VERIFICATION = 'none'
+ACCOUNT_LOGIN_METHODS = {'email'}
+ACCOUNT_SIGNUP_FIELDS = ['email*']
+
+# Кастомный adapter — создаёт клиента с правильной ролью и логикой
+SOCIALACCOUNT_ADAPTER = 'apps.accounts.adapters.CustomSocialAccountAdapter' 
 

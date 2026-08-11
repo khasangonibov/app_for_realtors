@@ -16,11 +16,15 @@ from django.conf.urls.static import static
 urlpatterns = [
     # ── Django Admin ──────────────────────────────────────────────────────────
     path('admin/', admin.site.urls),
-
+    
+     # django-allauth — OAuth вход (GitHub, VK)
+    path('accounts/', include('allauth.urls')),
+    
     # ── Публичные страницы (без авторизации) ──────────────────────────────────
     path('', include('apps.properties.urls.public', namespace='public')),
     path('', include('apps.selections.urls.public', namespace='selection_public')),
     
+
 
     # ── CRM-интерфейс (требует авторизации) ───────────────────────────────────
     path('crm/', include([
@@ -43,7 +47,7 @@ urlpatterns = [
         path('', include('apps.contacts.api_urls')),
         path('', include('apps.deals.api_urls')),
         path('', include('apps.tasks.api_urls')),
-        path('', include('apps.selections.api_urls')),  # ← раскомментировали
+        path('', include('apps.selections.api_urls')),
     ])),
     # DRF browsable API — кнопка Log in в браузере
     path('api-auth/', include('rest_framework.urls')),

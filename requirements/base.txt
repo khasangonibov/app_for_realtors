@@ -38,3 +38,7 @@ django-ratelimit==4.1.0
 
 # Логирование
 sentry-sdk==2.19.2
+
+# Oauth
+django-allauth==65.3.0
+requests==2.32.3
