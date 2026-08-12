@@ -1,3 +1,4 @@
+{% load property_extras %}
 {% if page_obj.has_other_pages %}
 <nav class="mt-4">
     <ul class="pagination justify-content-center">
@@ -6,13 +7,13 @@
         {% if page_obj.has_previous %}
         <li class="page-item">
             <a class="page-link"
-               href="?{% if request.GET %}{{ request.GET.urlencode }}&{% endif %}page=1">
+                href="{% page_url 1 %}"                
                 «
             </a>
         </li>
         <li class="page-item">
             <a class="page-link"
-               href="?{% if request.GET %}{{ request.GET.urlencode }}&{% endif %}page={{ page_obj.previous_page_number }}">
+                href="{% page_url page_obj.previous_page_number %}"                
                 ‹
             </a>
         </li>
@@ -27,7 +28,7 @@
             {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
             <li class="page-item">
                 <a class="page-link"
-                   href="?{% if request.GET %}{{ request.GET.urlencode }}&{% endif %}page={{ num }}">
+href="{% page_url num %}"
                     {{ num }}
                 </a>
             </li>
@@ -38,13 +39,13 @@
         {% if page_obj.has_next %}
         <li class="page-item">
             <a class="page-link"
-               href="?{% if request.GET %}{{ request.GET.urlencode }}&{% endif %}page={{ page_obj.next_page_number }}">
+                href="{% page_url page_obj.next_page_number %}"
                 ›
             </a>
         </li>
         <li class="page-item">
             <a class="page-link"
-               href="?{% if request.GET %}{{ request.GET.urlencode }}&{% endif %}page={{ page_obj.paginator.num_pages }}">
+                href="{% page_url page_obj.paginator.num_pages %}"
                 »
             </a>
         </li>

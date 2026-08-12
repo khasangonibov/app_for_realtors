@@ -59,7 +59,7 @@ class PropertyForm(forms.ModelForm):
             # Описание
             'title', 'description',
             # Цена
-            'price', 'price_currency',
+            'price',
             'commission_percent', 'commission_fixed',
             # Площади
             'area_total', 'area_living', 'area_kitchen',
@@ -81,7 +81,6 @@ class PropertyForm(forms.ModelForm):
             'title': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Например: Уютная квартира в центре'}),
             'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 5}),
             'price': forms.NumberInput(attrs={'class': 'form-control'}),
-            'price_currency': forms.TextInput(attrs={'class': 'form-control'}),
             'commission_percent': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
             'commission_fixed': forms.NumberInput(attrs={'class': 'form-control'}),
             'area_total': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
@@ -108,7 +107,6 @@ class PropertyForm(forms.ModelForm):
             'title': 'Заголовок',
             'description': 'Описание',
             'price': 'Цена, ₽',
-            'price_currency': 'Валюта',
             'commission_percent': 'Комиссия, %',
             'commission_fixed': 'Комиссия фикс., ₽',
             'area_total': 'Общая площадь, м²',
@@ -127,7 +125,52 @@ class PropertyForm(forms.ModelForm):
             'is_published': 'Опубликован публично',
             'is_exclusive': 'Эксклюзивный объект',
         }
-        
+
+    # Структура формы: секция → поля → ширина bootstrap-колонки.
+    # Вынесено сюда, чтобы шаблон рендерил поля циклом и разметка
+    # вывода ошибок не дублировалась 22 раза.
+    # Чекбоксы is_published/is_exclusive не входят — у них своя вёрстка.
+    FIELDSETS = [
+        ('main', 'Основное', [
+            ('deal_type', 'col-md-4'),
+            ('property_type', 'col-md-4'),
+            ('status', 'col-md-4'),
+            ('title', 'col-12'),
+            ('description', 'col-12'),
+        ]),
+        ('price', 'Цена и комиссия', [
+            ('price', 'col-md-4'),
+            ('commission_percent', 'col-md-4'),
+            ('commission_fixed', 'col-md-4'),
+        ]),
+        ('area', 'Площади и этажность', [
+            ('area_total', 'col-md-3'),
+            ('area_living', 'col-md-3'),
+            ('area_kitchen', 'col-md-3'),
+            ('rooms_count', 'col-md-3'),
+            ('floor', 'col-md-3'),
+            ('floors_total', 'col-md-3'),
+        ]),
+        ('address', 'Адрес', [
+            ('city', 'col-md-4'),
+            ('district', 'col-md-4'),
+            ('street', 'col-md-4'),
+            ('building', 'col-md-3'),
+            ('apartment', 'col-md-3'),
+            ('latitude', 'col-md-3'),
+            ('longitude', 'col-md-3'),
+        ]),
+    ]
+
+    def fieldsets(self):
+        for slug, title, items in self.FIELDSETS:
+            yield {
+                'slug': slug,
+                'title': title,
+                'fields': [(self[name], css) for name, css in items],
+            }
+
+   
 # Характеристики с предустановленными вариантами значений
 FEATURE_CHOICES = {
     'Тип дома': [

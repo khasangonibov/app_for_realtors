@@ -64,7 +64,7 @@
         {% if properties %}
         <div class="row g-3">
             {% for property in properties %}
-            <div class="col-md-6 col-xl-4">
+            <div class="col-md-6 col-xl-4" id="property-{{ property.pk }}">
                 <div class="card property-card h-100 border-0 shadow-sm">
 
                     {# Обложка с бейджами #}
@@ -137,7 +137,7 @@
                     {# Кнопки действий #}
                     <div class="card-footer bg-white border-top-0 pt-0 pb-3 px-3">
                         <div class="d-flex gap-2">
-                            <a href="{% url 'properties:edit' property.pk %}"
+                            <a href="{% url 'properties:edit' property.pk %}{% if request.GET %}?back={{ request.GET.urlencode|urlencode }}{% endif %}"
                             class="btn btn-outline-secondary btn-sm flex-grow-1">
                                 ✏️ Изменить
                             </a>
@@ -169,6 +169,7 @@
             {% endif %}
         </div>
         {% endif %}
+    {% include 'crm/_pagination.html' %}
 
     </div>
 </div>
@@ -186,6 +187,19 @@
             setTimeout(() => toast.remove(), 2000);
         });
     }
+
+    // Подсветка карточки, к которой пришли по якорю после сохранения
+    (function () {
+        if (!window.location.hash) return;
+        const target = document.querySelector(window.location.hash);
+        if (!target) return;
+
+        const card = target.querySelector('.card');
+        if (!card) return;
+
+        card.style.transition = 'box-shadow .3s';
+        card.style.boxShadow = '0 0 0 3px #0d6efd';
+        setTimeout(() => { card.style.boxShadow = ''; }, 2500);
+    })();
 </script>
-{% include 'crm/_pagination.html' %}
 {% endblock %}

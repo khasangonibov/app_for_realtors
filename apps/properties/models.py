@@ -245,12 +245,19 @@ class PropertyFeature(UUIDModel):
         verbose_name='Объект',
     )
     key = models.CharField('Характеристика', max_length=100)
-    value = models.CharField('Значение', max_length=255)
+    value = models.CharField('Значение', max_length=255, blank=True, default='')
 
     class Meta:
         verbose_name = 'Характеристика объекта'
         verbose_name_plural = 'Характеристики объектов'
-
+        # Одна характеристика с данным ключом на объект.
+        # Защита от задвоения при повторном сабмите формы создания.
+        constraints = [
+            models.UniqueConstraint(
+                fields=['property', 'key'],
+                name='unique_feature_key_per_property',
+            ),
+        ]
     def __str__(self):
         return f'{self.key}: {self.value}'
 

@@ -135,9 +135,6 @@ def contact_export_excel(request):
         agency=request.user.agency
     ).select_related('agent')
 
-    if request.user.is_agent:
-        queryset = queryset.filter(agent=request.user)
-
     status = request.GET.get('status')
     if status:
         queryset = queryset.filter(status=status)

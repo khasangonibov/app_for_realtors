@@ -5,134 +5,277 @@
 
 {% block content %}
 <div class="bg-light min-vh-100">
+    <div class="container-fluid px-4 py-4">
 
-    <div class="container pb-5">
-
-        <h1 class="h3 mb-1">{{ selection.title }}</h1>
-        {% if selection.contact %}
-        <p class="text-muted mb-4">Клиент: {{ selection.contact.full_name }}</p>
-        {% else %}
-        <p class="text-muted mb-4">Без привязки к клиенту</p>
-        {% endif %}
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h1 class="h3 mb-1">{{ selection.title }}</h1>
+                {% if selection.contact %}
+                <p class="text-muted mb-0">Клиент: {{ selection.contact.full_name }}</p>
+                {% else %}
+                <p class="text-muted mb-0">Без привязки к клиенту</p>
+                {% endif %}
+            </div>
+            <div class="d-flex gap-2">
+                <a href="{% url 'selections:list' %}" class="btn btn-outline-secondary btn-sm">
+                    ← Все подборки
+                </a>
+                <button class="btn btn-outline-primary btn-sm"
+                        onclick="copyLink('{{ request.scheme }}://{{ request.get_host }}{{ selection.get_public_url }}')">
+                    🔗 Ссылка для клиента
+                </button>
+            </div>
+        </div>
 
         {% for message in messages %}
-        <div class="alert alert-success alert-dismissible fade show">
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show">
             {{ message }}
             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
         {% endfor %}
 
-        <div class="row g-4">
+        {# ── Добавленные объекты ─────────────────────────────────────────── #}
+        <div class="mb-4">
+            <h2 class="h5 mb-3">В подборке ({{ items|length }})</h2>
 
-            {# ── Объекты в подборке ──────────────────────────────────────── #}
-            <div class="col-lg-8">
-                <h2 class="h5 mb-3">Объекты в подборке ({{ items|length }})</h2>
-
-                {% if items %}
+            {% if items %}
+            <div class="row g-3">
                 {% for item in items %}
-                <div class="bg-white rounded border mb-3 overflow-hidden">
-                    <div class="row g-0">
-
-                        {# Фото #}
-                        {% if item.property.cover_photo %}
-                        <div class="col-md-3">
-                            <img src="{{ item.property.cover_photo.image.url }}"
-                                 class="img-fluid h-100"
-                                 style="object-fit: cover; max-height: 150px; width: 100%;"
-                                 alt="">
+                <div class="col-md-6 col-xl-4">
+                    <div class="card border-0 shadow-sm h-100">
+                        {% with photo=item.property.cover_photo %}
+                        {% if photo %}
+                        <img src="{{ photo.image.url }}" class="card-img-top"
+                             style="height: 160px; object-fit: cover;" alt="">
+                        {% else %}
+                        <div class="bg-secondary-subtle d-flex align-items-center justify-content-center"
+                             style="height: 160px;">
+                            <span class="text-muted small">Нет фото</span>
                         </div>
                         {% endif %}
-
-                        <div class="col">
-                            <div class="p-3">
-                                <div class="d-flex justify-content-between align-items-start">
-                                    <div>
-                                        <p class="fw-semibold mb-1">
-                                            {{ item.property.get_property_type_display }}
-                                            {% if item.property.area_total %}
-                                                {{ item.property.area_total }} м²
-                                            {% endif %}
-                                        </p>
-                                        <p class="text-muted small mb-1">
-                                            {{ item.property.city }}{% if item.property.street %}, {{ item.property.street }}{% endif %}
-                                        </p>
-                                        <p class="fw-bold text-primary mb-2">
-                                            {{ item.property.price|intcomma }} ₽
-                                        </p>
-                                    </div>
-
-                                    {# Реакция клиента #}
-                                    <span class="badge
-                                        {% if item.client_status == 'liked' %}bg-success
-                                        {% elif item.client_status == 'rejected' %}bg-danger
-                                        {% elif item.client_status == 'maybe' %}bg-warning text-dark
-                                        {% else %}bg-light text-dark border{% endif %}">
-                                        {{ item.get_client_status_display }}
-                                    </span>
-                                </div>
-
-                                {% if item.agent_comment %}
-                                <p class="text-muted small mb-2">
-                                    💬 {{ item.agent_comment }}
-                                </p>
-                                {% endif %}
-
-                                {# Удалить объект из подборки #}
-                                {% if can_edit %}
-                                <form method="post"
-                                      action="{% url 'selections:item_delete' selection.pk item.pk %}"
-                                      class="d-inline">
-                                    {% csrf_token %}
-                                    <button type="submit"
-                                            class="btn btn-outline-danger btn-sm"
-                                            onclick="return confirm('Удалить объект из подборки?')">
-                                        Удалить
-                                    </button>
-                                </form>
-                                {% endif %}
+                        {% endwith %}
+                        <div class="card-body">
+                            <div class="small fw-semibold">
+                                {{ item.property.get_property_type_display }}
+                                {% if item.property.area_total %}{{ item.property.area_total }} м²{% endif %}
                             </div>
+                            <div class="text-muted small">{{ item.property.city }}</div>
+                            <div class="fw-bold text-primary">{{ item.property.price|intcomma }} ₽</div>
                         </div>
+                        {% if can_edit %}
+                        <div class="card-footer bg-white border-top">
+                            <form method="post"
+                                  action="{% url 'selections:item_delete' selection.pk item.pk %}"
+                                  onsubmit="return confirm('Удалить объект из подборки?')">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-outline-danger btn-sm w-100">
+                                    Убрать из подборки
+                                </button>
+                            </form>
+                        </div>
+                        {% endif %}
                     </div>
                 </div>
                 {% endfor %}
-
-                {% else %}
-                <div class="bg-white rounded border text-center py-5 text-muted">
-                    Объекты ещё не добавлены. Используйте форму справа.
-                </div>
-                {% endif %}
-            </div>
-
-            {# ── Форма добавления объекта ────────────────────────────────── #}
-            {% if can_edit %}
-            <div class="col-lg-4">
-                <div class="bg-white rounded border p-4 position-sticky" style="top: 20px;">
-                    <h2 class="h6 mb-3">Добавить объект</h2>
-                    <form method="post">
-                        {% csrf_token %}
-                        <div class="mb-3">
-                            <label class="form-label small">{{ item_form.property.label }}</label>
-                            {{ item_form.property }}
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label small">{{ item_form.agent_comment.label }}</label>
-                            {{ item_form.agent_comment }}
-                        </div>
-                        <button type="submit" class="btn btn-primary w-100">
-                            Добавить в подборку
-                        </button>
-                    </form>
-                </div>
             </div>
             {% else %}
-            <div class="alert alert-info">
-                Только создатель подборки может добавлять и удалять объекты.
+            <div class="bg-white rounded border text-center py-4 text-muted">
+                Объекты ещё не добавлены — выберите их ниже.
             </div>
             {% endif %}
-
         </div>
+
+        {# ── Панель добавления объектов ──────────────────────────────────── #}
+        {% if can_edit %}
+        <div class="mt-5">
+            <h2 class="h5 mb-3">Добавить объекты</h2>
+
+            {# Фильтры #}
+            <div class="bg-white rounded border p-3 mb-3">
+                <form method="get" class="row g-2 align-items-end">
+                    <div class="col-md-3 col-lg-2">
+                        <label class="form-label small">Поиск</label>
+                        <input type="text" name="search" value="{{ current_search }}"
+                               class="form-control form-control-sm" placeholder="Город, адрес...">
+                    </div>
+                    <div class="col-6 col-md-2 col-lg-1">
+                        <label class="form-label small">Сделка</label>
+                        <select name="deal_type" class="form-select form-select-sm">
+                            <option value="">Все</option>
+                            {% for value, label in deal_types %}
+                            <option value="{{ value }}" {% if current_deal_type == value %}selected{% endif %}>
+                                {{ label }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-6 col-md-2 col-lg-2">
+                        <label class="form-label small">Тип объекта</label>
+                        <select name="property_type" class="form-select form-select-sm">
+                            <option value="">Все типы</option>
+                            {% for value, label in property_types %}
+                            <option value="{{ value }}" {% if current_property_type == value %}selected{% endif %}>
+                                {{ label }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-6 col-md-2 col-lg-2">
+                        <label class="form-label small">Город</label>
+                        <select name="city" class="form-select form-select-sm">
+                            <option value="">Все города</option>
+                            {% for city in cities %}
+                            <option value="{{ city }}" {% if current_city == city %}selected{% endif %}>
+                                {{ city }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-6 col-md-1 col-lg-1">
+                        <label class="form-label small">Комнат</label>
+                        <select name="rooms" class="form-select form-select-sm">
+                            <option value="">Все</option>
+                            {% for i in "12345" %}
+                            <option value="{{ i }}" {% if current_rooms == i %}selected{% endif %}>
+                                {{ i }}{% if i == "5" %}+{% endif %}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-6 col-md-2 col-lg-2">
+                        <label class="form-label small">Цена от</label>
+                        <input type="number" name="price_min" value="{{ current_price_min }}"
+                               class="form-control form-control-sm" placeholder="От">
+                    </div>
+                    <div class="col-6 col-md-2 col-lg-2">
+                        <label class="form-label small">Цена до</label>
+                        <input type="number" name="price_max" value="{{ current_price_max }}"
+                               class="form-control form-control-sm" placeholder="До">
+                    </div>
+                    <div class="col-12 col-lg-auto d-flex gap-2">
+                        <button type="submit" class="btn btn-primary btn-sm">Найти</button>
+                        <a href="{% url 'selections:detail' selection.pk %}" class="btn btn-outline-secondary btn-sm">
+                            Сброс
+                        </a>
+                    </div>
+                </form>
+            </div>
+
+            {# Форма мультивыбора карточек #}
+            <form method="post" id="addPropertiesForm">
+                {% csrf_token %}
+
+                {% if available_properties %}
+                <div class="row g-3">
+                    {% for property in available_properties %}
+                    <div class="col-md-6 col-xl-4">
+                        <label class="card border-0 shadow-sm h-100 property-select-card"
+                               style="cursor: pointer;">
+                            <input type="checkbox" name="property_ids" value="{{ property.pk }}"
+                                   class="d-none property-checkbox">
+
+                            <div class="position-relative">
+                                {% with photo=property.cover_photo %}
+                                {% if photo %}
+                                <img src="{{ photo.image.url }}" class="card-img-top"
+                                     style="height: 160px; object-fit: cover;" alt="">
+                                {% else %}
+                                <div class="bg-secondary-subtle d-flex align-items-center justify-content-center"
+                                     style="height: 160px;">
+                                    <span class="text-muted small">Нет фото</span>
+                                </div>
+                                {% endif %}
+                                {% endwith %}
+                                {# Индикатор выбора #}
+                                <div class="selection-check position-absolute top-0 end-0 m-2
+                                            rounded-circle bg-white border d-flex align-items-center
+                                            justify-content-center"
+                                     style="width: 28px; height: 28px;">
+                                    <span class="check-icon" style="display: none;">✓</span>
+                                </div>
+                            </div>
+
+                            <div class="card-body">
+                                <div class="small fw-semibold">
+                                    {{ property.get_property_type_display }}
+                                    {% if property.rooms_count %}{{ property.rooms_count }}-комн.{% endif %}
+                                    {% if property.area_total %}{{ property.area_total }} м²{% endif %}
+                                </div>
+                                <div class="text-muted small">
+                                    {{ property.city }}{% if property.street %}, {{ property.street }}{% endif %}
+                                </div>
+                                <div class="fw-bold text-primary">{{ property.price|intcomma }} ₽</div>
+                            </div>
+                        </label>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                {# Пагинация #}
+                {% if page_obj.has_other_pages %}
+                <nav class="mt-4">
+                    <ul class="pagination justify-content-center">
+                        {% if page_obj.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?{% if request.GET %}{{ request.GET.urlencode }}&{% endif %}page={{ page_obj.previous_page_number }}">‹</a>
+                        </li>
+                        {% endif %}
+                        {% for num in page_obj.paginator.page_range %}
+                            {% if page_obj.number == num %}
+                            <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                            <li class="page-item">
+                                <a class="page-link" href="?{% if request.GET %}{{ request.GET.urlencode }}&{% endif %}page={{ num }}">{{ num }}</a>
+                            </li>
+                            {% endif %}
+                        {% endfor %}
+                        {% if page_obj.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?{% if request.GET %}{{ request.GET.urlencode }}&{% endif %}page={{ page_obj.next_page_number }}">›</a>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+
+                {# Плавающая панель с кнопкой добавления #}
+                <div class="position-sticky bottom-0 bg-white border rounded p-3 mt-4 shadow-sm
+                            d-flex justify-content-between align-items-center">
+                    <span class="text-muted small">
+                        Выбрано: <span id="selectedCount">0</span>
+                    </span>
+                    <button type="submit" class="btn btn-primary" id="addSelectedBtn" disabled>
+                        Добавить выбранные в подборку
+                    </button>
+                </div>
+
+                {% else %}
+                <div class="bg-white rounded border text-center py-4 text-muted">
+                    Нет доступных объектов по заданным фильтрам.
+                </div>
+                {% endif %}
+            </form>
+        </div>
+        {% endif %}
+
     </div>
 </div>
+
+<style>
+    .property-select-card input:checked ~ .card-body,
+    .property-select-card:has(input:checked) {
+        outline: 3px solid #0d6efd;
+        outline-offset: -3px;
+    }
+    .property-select-card:has(input:checked) .selection-check {
+        background: #0d6efd !important;
+        color: white;
+        border-color: #0d6efd !important;
+    }
+    .property-select-card:has(input:checked) .check-icon {
+        display: inline !important;
+    }
+</style>
 {% endblock %}
 
 {% block extra_js %}
@@ -147,5 +290,18 @@
             setTimeout(() => toast.remove(), 2000);
         });
     }
+
+    // Обновляем счётчик выбранных карточек и разблокируем кнопку
+    function updateSelectedCount() {
+        const checked = document.querySelectorAll('.property-checkbox:checked').length;
+        document.getElementById('selectedCount').textContent = checked;
+        document.getElementById('addSelectedBtn').disabled = checked === 0;
+    }
+
+    document.querySelectorAll('.property-checkbox').forEach(cb => {
+        cb.addEventListener('change', updateSelectedCount);
+    });
+
+    updateSelectedCount();
 </script>
 {% endblock %}

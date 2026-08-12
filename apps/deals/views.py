@@ -103,9 +103,6 @@ def deal_export_excel(request):
         agency=request.user.agency
     ).select_related('property', 'buyer_contact', 'seller_contact', 'agent')
 
-    if request.user.is_agent:
-        queryset = queryset.filter(agent=request.user)
-
     from datetime import datetime
     filename = f"deals_{datetime.now().strftime('%Y%m%d_%H%M')}.xlsx"
     wb, ws, response = create_excel_response(filename)

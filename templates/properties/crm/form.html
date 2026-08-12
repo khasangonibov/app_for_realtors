@@ -21,118 +21,42 @@
 
         <form method="post" novalidate>
             {% csrf_token %}
-
-            {# ── Тип сделки и объекта ────────────────────────────────────── #}
-            <div class="bg-white rounded p-4 mb-4 border">
-                <h2 class="h5 mb-3">Основное</h2>
-                <div class="row g-3">
-                    <div class="col-md-4">
-                        <label class="form-label">{{ form.deal_type.label }}</label>
-                        {{ form.deal_type }}
-                    </div>
-                    <div class="col-md-4">
-                        <label class="form-label">{{ form.property_type.label }}</label>
-                        {{ form.property_type }}
-                    </div>
-                    <div class="col-md-4">
-                        <label class="form-label">{{ form.status.label }}</label>
-                        {{ form.status }}
-                    </div>
-                    <div class="col-12">
-                        <label class="form-label">{{ form.title.label }}</label>
-                        {{ form.title }}
-                    </div>
-                    <div class="col-12">
-                        <label class="form-label">{{ form.description.label }}</label>
-                        {{ form.description }}
-                    </div>
-                </div>
+            
+            {# Сводка ошибок — без неё невалидная форма перерисовывается молча #}
+            {% if form.errors or feature_formset.errors or feature_formset.non_form_errors %}
+            <div class="alert alert-danger">
+                <strong>Не удалось сохранить объект.</strong> Проверьте поля ниже.
+                {{ form.non_field_errors }}
+                {{ feature_formset.non_form_errors }}
             </div>
+            {% endif %}
 
-            {# ── Цена и комиссия ─────────────────────────────────────────── #}
+
+            {# Откуда пришли — фильтры и страница списка, чтобы вернуться туда же #}
+            <input type="hidden" name="back" value="{{ request.GET.back }}">
+
+            {# Секции формы рендерятся циклом из PropertyForm.FIELDSETS #}
+            {% for section in form.fieldsets %}
             <div class="bg-white rounded p-4 mb-4 border">
-                <h2 class="h5 mb-3">Цена и комиссия</h2>
+                <h2 class="h5 mb-3">{{ section.title }}</h2>
                 <div class="row g-3">
-                    <div class="col-md-4">
-                        <label class="form-label">{{ form.price.label }}</label>
-                        {{ form.price }}
+                    {% for field, css in section.fields %}
+                    <div class="{{ css }}">
+                        <label class="form-label" for="{{ field.id_for_label }}">
+                            {{ field.label }}
+                        </label>
+                        {{ field }}
+                        {% for error in field.errors %}
+                        <div class="text-danger small mt-1">{{ error }}</div>
+                        {% endfor %}
+                        {% if field.help_text %}
+                        <div class="form-text">{{ field.help_text }}</div>
+                        {% endif %}
                     </div>
-                    <div class="col-md-4">
-                        <label class="form-label">{{ form.commission_percent.label }}</label>
-                        {{ form.commission_percent }}
-                    </div>
-                    <div class="col-md-4">
-                        <label class="form-label">{{ form.commission_fixed.label }}</label>
-                        {{ form.commission_fixed }}
-                    </div>
-                </div>
-            </div>
+                    {% endfor %}
 
-            {# ── Площади и этажность ─────────────────────────────────────── #}
-            <div class="bg-white rounded p-4 mb-4 border">
-                <h2 class="h5 mb-3">Площади и этажность</h2>
-                <div class="row g-3">
-                    <div class="col-md-3">
-                        <label class="form-label">{{ form.area_total.label }}</label>
-                        {{ form.area_total }}
-                    </div>
-                    <div class="col-md-3">
-                        <label class="form-label">{{ form.area_living.label }}</label>
-                        {{ form.area_living }}
-                    </div>
-                    <div class="col-md-3">
-                        <label class="form-label">{{ form.area_kitchen.label }}</label>
-                        {{ form.area_kitchen }}
-                    </div>
-                    <div class="col-md-3">
-                        <label class="form-label">{{ form.rooms_count.label }}</label>
-                        {{ form.rooms_count }}
-                    </div>
-                    <div class="col-md-3">
-                        <label class="form-label">{{ form.floor.label }}</label>
-                        {{ form.floor }}
-                    </div>
-                    <div class="col-md-3">
-                        <label class="form-label">{{ form.floors_total.label }}</label>
-                        {{ form.floors_total }}
-                    </div>
-                </div>
-            </div>
-
-            {# ── Адрес ───────────────────────────────────────────────────── #}
-            <div class="bg-white rounded p-4 mb-4 border">
-                <h2 class="h5 mb-3">Адрес</h2>
-                <div class="row g-3">
-                    <div class="col-md-4">
-                        <label class="form-label">{{ form.city.label }}</label>
-                        {{ form.city }}
-                    </div>
-                    <div class="col-md-4">
-                        <label class="form-label">{{ form.district.label }}</label>
-                        {{ form.district }}
-                    </div>
-                    <div class="col-md-4">
-                        <label class="form-label">{{ form.street.label }}</label>
-                        {{ form.street }}
-                    </div>
-                    <div class="col-md-3">
-                        <label class="form-label">{{ form.building.label }}</label>
-                        {{ form.building }}
-                    </div>
-                    <div class="col-md-3">
-                        <label class="form-label">{{ form.apartment.label }}</label>
-                        {{ form.apartment }}
-                    </div>
-                    <div class="col-md-3">
-                        <label class="form-label">{{ form.latitude.label }}</label>
-                        {{ form.latitude }}
-                    </div>
-                    <div class="col-md-3">
-                        <label class="form-label">{{ form.longitude.label }}</label>
-                        {{ form.longitude }}
-                    </div>
-
-                    {# Кнопка геокодинга — определяет координаты по адресу #}
+                    {# Кнопка геокодинга принадлежит секции «Адрес» #}
+                    {% if section.slug == 'address' %}
                     <div class="col-12">
                         <button type="button"
                                 id="geocodeBtn"
@@ -144,9 +68,11 @@
                             Заполните город, улицу и дом — затем нажмите кнопку
                         </span>
                     </div>
-
+                    {% endif %}
                 </div>
             </div>
+            {% endfor %}
+
 
             {# ── Публикация ──────────────────────────────────────────────── #}
             <div class="bg-white rounded p-4 mb-4 border">
@@ -261,7 +187,11 @@
                             </div>
                             <div class="flex-grow-1">
                                 {{ feature_form.value }}
+                                {% if feature_form.errors %}
+                                <div class="text-danger small">{{ feature_form.errors.value|striptags }}</div>
+                                {% endif %}
                             </div>
+
                             {# Чекбокс удаления — скрываем визуально #}
                             <div style="display: none;">
                                 {{ feature_form.DELETE }}
@@ -279,7 +209,8 @@
                 <button type="submit" class="btn btn-primary px-4">
                     {{ submit_label }}
                 </button>
-                <a href="{% url 'properties:list' %}" class="btn btn-outline-secondary">
+                <a href="{% url 'properties:list' %}{% if request.GET.back %}?{{ request.GET.back }}{% endif %}"
+                   class="btn btn-outline-secondary">
                     Отмена
                 </a>
             </div>
