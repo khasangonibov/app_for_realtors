@@ -42,6 +42,14 @@ class UserInviteForm(forms.ModelForm):
             'phone': 'Телефон',
         }
 
+    def __init__(self, *args, current_user=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        if not (current_user and current_user.is_superuser):
+            self.fields['role'].choices = [
+                (value, label) for value, label in UserProfile.Role.choices
+                if value != UserProfile.Role.ADMIN
+            ]
+
     def clean_email(self):
         email = self.cleaned_data.get('email', '').strip().lower()
         if not email:
@@ -75,6 +83,13 @@ class UserEditForm(forms.ModelForm):
             'phone': 'Телефон',
         }
 
+    def __init__(self, *args, current_user=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        if not (current_user and current_user.is_superuser):
+            self.fields['role'].choices = [
+                (value, label) for value, label in UserProfile.Role.choices
+                if value != UserProfile.Role.ADMIN
+            ]
         
 class ClientRegisterForm(forms.ModelForm):
     """Форма регистрации клиента. Логином служит email —

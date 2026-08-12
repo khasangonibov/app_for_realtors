@@ -30,6 +30,7 @@
                     <div class="col-md-6">
                         <label class="form-label">
                             {{ form.last_name.label }}
+                            <span class="text-danger">*</span>
                         </label>
                         {{ form.last_name }}
                     </div>
@@ -41,11 +42,17 @@
                         {{ form.first_name }}
                     </div>
                     <div class="col-md-6">
-                        <label class="form-label">{{ form.email.label }}</label>
+                        <label class="form-label">
+                            {{ form.email.label }}
+                            <span class="text-danger">*</span>
+                        </label>
                         {{ form.email }}
                     </div>
                     <div class="col-md-6">
-                        <label class="form-label">{{ form.phone.label }}</label>
+                        <label class="form-label">
+                            {{ form.phone.label }}
+                            <span class="text-danger">*</span>
+                        </label>
                         {{ form.phone }}
                     </div>
                 </div>
@@ -70,9 +77,9 @@
                         <label class="form-label">{{ form.role.label }}</label>
                         {{ form.role }}
                         <div class="form-text">
-                            Администратор — полный доступ,
-                            Руководитель — аналитика и все объекты,
-                            Риелтор — только свои объекты
+                            Администратор — полный доступ;
+                            Руководитель — общая аналитика агентства и все объекты;
+                            Риелтор — публичные объекты, объекты в доверительном управлении только свои.
                         </div>
                     </div>
                 </div>

@@ -74,14 +74,16 @@
                         </td>
                         <td>
                             <div class="d-flex gap-2 justify-content-end">
-                                <a href="{% url 'accounts:user_edit' user.pk %}"
-                                   class="btn btn-outline-secondary btn-sm">
+                                {% if user.profile.role == 'admin' and not request.user.is_superuser %}
+                                <span class="btn btn-outline-secondary btn-sm disabled" title="Доступно только суперпользователю">
+                                    🔒 Админ
+                                </span>
+                                {% else %}
+                                <a href="{% url 'accounts:user_edit' user.pk %}" class="btn btn-outline-secondary btn-sm">
                                     Изменить
                                 </a>
 
-                                {# Сброс пароля #}
-                                <form method="post"
-                                      action="{% url 'accounts:user_reset_password' user.pk %}">
+                                <form method="post" action="{% url 'accounts:user_reset_password' user.pk %}">
                                     {% csrf_token %}
                                     <button type="submit"
                                             class="btn btn-outline-warning btn-sm"
@@ -90,10 +92,8 @@
                                     </button>
                                 </form>
 
-                                {# Активировать/деактивировать #}
                                 {% if user != request.user %}
-                                <form method="post"
-                                      action="{% url 'accounts:user_toggle' user.pk %}">
+                                <form method="post" action="{% url 'accounts:user_toggle' user.pk %}">
                                     {% csrf_token %}
                                     <button type="submit"
                                             class="btn btn-sm {% if user.is_active %}btn-outline-danger{% else %}btn-outline-success{% endif %}"
@@ -101,6 +101,7 @@
                                         {% if user.is_active %}Деактивировать{% else %}Активировать{% endif %}
                                     </button>
                                 </form>
+                                {% endif %}
                                 {% endif %}
                             </div>
                         </td>

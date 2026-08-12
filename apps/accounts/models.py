@@ -56,8 +56,7 @@ class User(AbstractUser):
     Добавляем только то что нам нужно сверху.
 
     Примечание: UUID здесь задаём явно (а не через UUIDModel),
-    потому что множественное наследование от AbstractUser и UUIDModel
-    может вызвать конфликт полей.
+    чтобы избежать конфликта полей при множественном наследовании от AbstractUser и UUIDModel.
     """
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
 

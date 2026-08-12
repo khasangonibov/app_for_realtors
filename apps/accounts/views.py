@@ -162,17 +162,25 @@ def user_invite(request):
 
     if request.method == 'POST':
         from .forms import UserInviteForm
-        form = UserInviteForm(request.POST)
+        form = UserInviteForm(request.POST, current_user=request.user)
         if form.is_valid():
+            selected_role = form.cleaned_data['role']
+
+            # Серверная защита — даже если роль admin как-то попала в POST,
+            # не-суперпользователь не может её назначить
+            if selected_role == UserProfile.Role.ADMIN and not request.user.is_superuser:
+                messages.error(request, 'Только суперпользователь может назначать роль администратора.')
+                return redirect('accounts:users_list')
+
             temp_password = get_random_string(12)
             user = form.save(commit=False)
-            user.username = form.cleaned_data['email']  # email как логин
+            user.username = form.cleaned_data['email']
             user.agency = Agency.get_solo()
             user.set_password(temp_password)
             user.save()
             UserProfile.objects.create(
                 user=user,
-                role=form.cleaned_data['role'],
+                role=selected_role,
             )
             messages.success(
                 request,
@@ -182,11 +190,11 @@ def user_invite(request):
             return redirect('accounts:users_list')
     else:
         from .forms import UserInviteForm
-        form = UserInviteForm()
+        form = UserInviteForm(current_user=request.user)
 
     return render(request, 'accounts/user_invite.html', {
         'form': form,
-        'title': 'Добавить сотрудника',
+        'title': 'Пригласить сотрудника',
     })
 
 
@@ -195,20 +203,33 @@ def user_invite(request):
 def user_edit(request, pk):
     user = get_object_or_404(User, pk=pk, agency=request.user.agency)
 
+    # Не-суперпользователь не может редактировать администратора вообще —
+    # ни его роль, ни другие данные, чтобы исключить случайное понижение
+    target_is_admin = hasattr(user, 'profile') and user.profile.role == UserProfile.Role.ADMIN
+    if target_is_admin and not request.user.is_superuser:
+        messages.error(request, 'Редактировать администратора может только суперпользователь.')
+        return redirect('accounts:users_list')
+
     if request.method == 'POST':
         from .forms import UserEditForm
-        form = UserEditForm(request.POST, instance=user)
+        form = UserEditForm(request.POST, instance=user, current_user=request.user)
         if form.is_valid():
+            selected_role = form.cleaned_data['role']
+
+            if selected_role == UserProfile.Role.ADMIN and not request.user.is_superuser:
+                messages.error(request, 'Только суперпользователь может назначать роль администратора.')
+                return redirect('accounts:users_list')
+
             form.save()
             profile, _ = UserProfile.objects.get_or_create(user=user)
-            profile.role = form.cleaned_data['role']
+            profile.role = selected_role
             profile.save()
             messages.success(request, 'Данные сотрудника обновлены.')
             return redirect('accounts:users_list')
     else:
         from .forms import UserEditForm
         initial_role = user.profile.role if hasattr(user, 'profile') else UserProfile.Role.AGENT
-        form = UserEditForm(instance=user, initial={'role': initial_role})
+        form = UserEditForm(instance=user, current_user=request.user, initial={'role': initial_role})
 
     return render(request, 'accounts/user_invite.html', {
         'form': form,
@@ -222,9 +243,16 @@ def user_edit(request, pk):
 def user_toggle_active(request, pk):
     if request.method == 'POST':
         user = get_object_or_404(User, pk=pk, agency=request.user.agency)
+
         if user == request.user:
             messages.error(request, 'Нельзя деактивировать свой аккаунт.')
             return redirect('accounts:users_list')
+
+        target_is_admin = hasattr(user, 'profile') and user.profile.role == UserProfile.Role.ADMIN
+        if target_is_admin and not request.user.is_superuser:
+            messages.error(request, 'Изменять статус администратора может только суперпользователь.')
+            return redirect('accounts:users_list')
+
         user.is_active = not user.is_active
         user.save(update_fields=['is_active'])
         status = 'активирован' if user.is_active else 'деактивирован'
@@ -238,6 +266,12 @@ def user_reset_password(request, pk):
     if request.method == 'POST':
         from django.utils.crypto import get_random_string
         user = get_object_or_404(User, pk=pk, agency=request.user.agency)
+
+        target_is_admin = hasattr(user, 'profile') and user.profile.role == UserProfile.Role.ADMIN
+        if target_is_admin and not request.user.is_superuser:
+            messages.error(request, 'Сбросить пароль администратора может только суперпользователь.')
+            return redirect('accounts:users_list')
+
         temp_password = get_random_string(12)
         user.set_password(temp_password)
         user.save()
