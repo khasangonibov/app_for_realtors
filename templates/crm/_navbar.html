@@ -68,19 +68,10 @@
                 </li>
                 <li class="nav-item">
                     <a class="nav-link {% if request.resolver_match.namespace == 'chat' %}active{% endif %}"
-                    href="{% url 'chat:agent_list' %}">
+                    href="{% url 'chat:list' %}">
                         💬 Чаты
-                        {% if unread_chats_count %}
-                        <span class="badge bg-danger">{{ unread_chats_count }}</span>
-                        {% endif %}
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link {% if request.resolver_match.url_name == 'internal_list' or request.resolver_match.url_name == 'internal_room' %}active{% endif %}"
-                    href="{% url 'chat:internal_list' %}">
-                        👥 Внутренние чаты
-                        {% if unread_internal_count %}
-                        <span class="badge bg-danger">{{ unread_internal_count }}</span>
+                        {% if unread_chats_count|add:unread_internal_count %}
+                        <span class="badge bg-danger">{{ unread_chats_count|add:unread_internal_count }}</span>
                         {% endif %}
                     </a>
                 </li>

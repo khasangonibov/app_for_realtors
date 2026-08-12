@@ -4,7 +4,11 @@ from django.http import HttpResponse
 from django.utils import timezone
 from django.contrib import messages
 from django.views.decorators.cache import never_cache
+from django.db import models
 from django.db.models import Max
+from django.urls import reverse
+from apps.accounts.models import User
+
 
 from .models import ChatRoom, Message, InternalChat, InternalMessage, InternalMessageRead
 from apps.accounts.models import Agency, User
@@ -146,60 +150,139 @@ def client_chat_poll(request, room_pk):
     })
 
 
+# @crm_required
+# def agent_chat_list(request):
+#     """Список чатов для сотрудника CRM."""
+#     from apps.accounts.models import UserProfile
+
+#     if request.user.is_agent:
+#         # Риелтор видит:
+#         # 1. Чаты где он назначен агентом
+#         # 2. Общие чаты (agent=None) — может подхватить
+#         personal_rooms = ChatRoom.objects.filter(
+#             agency=request.user.agency,
+#             agent=request.user,
+#         )
+#         general_rooms = ChatRoom.objects.filter(
+#             agency=request.user.agency,
+#             agent=None,
+#         )
+#         rooms = (personal_rooms | general_rooms).distinct()
+#     else:
+#         # Менеджер и admin видят все чаты агентства
+#         rooms = ChatRoom.objects.filter(
+#             agency=request.user.agency,
+#         )
+
+#     rooms = rooms.select_related(
+#         'client', 'agent'
+#     ).prefetch_related('messages').order_by('-created_at')
+
+#     rooms_with_unread = []
+#     for room in rooms:
+#         unread = room.messages.filter(
+#             is_read=False,
+#         ).exclude(sender=request.user).count()
+#         last_message = room.messages.order_by('-created_at').first()
+#         rooms_with_unread.append({
+#             'room': room,
+#             'unread': unread,
+#             'last_message': last_message,
+#             'is_general': room.agent is None,
+#         })
+
+#     # Сортируем — сначала непрочитанные
+#     rooms_with_unread.sort(key=lambda x: (
+#         -x['unread'],
+#         -(x['last_message'].created_at.timestamp()
+#           if x['last_message'] else 0)
+#     ))
+
+#     # Общее количество непрочитанных для бейджа
+#     total_unread = sum(r['unread'] for r in rooms_with_unread)
+
+#     return render(request, 'chat/agent_list.html', {
+#         'rooms': rooms_with_unread,
+#         'total_unread': total_unread,
+#     })
+
+
 @crm_required
-def agent_chat_list(request):
-    """Список чатов для сотрудника CRM."""
-    from apps.accounts.models import UserProfile
+def chat_list(request):
+    """Единый список всех чатов — с клиентами и внутренние.
+    Отсортированы вместе по времени последнего сообщения.
+    """
+    items = []
 
+    # ── Чаты с клиентами ────────────────────────────────────────────────
     if request.user.is_agent:
-        # Риелтор видит:
-        # 1. Чаты где он назначен агентом
-        # 2. Общие чаты (agent=None) — может подхватить
-        personal_rooms = ChatRoom.objects.filter(
+        client_rooms = ChatRoom.objects.filter(
             agency=request.user.agency,
-            agent=request.user,
+        ).filter(
+            models.Q(agent=request.user) | models.Q(agent=None)
         )
-        general_rooms = ChatRoom.objects.filter(
-            agency=request.user.agency,
-            agent=None,
-        )
-        rooms = (personal_rooms | general_rooms).distinct()
     else:
-        # Менеджер и admin видят все чаты агентства
-        rooms = ChatRoom.objects.filter(
-            agency=request.user.agency,
-        )
+        client_rooms = ChatRoom.objects.filter(agency=request.user.agency)
 
-    rooms = rooms.select_related(
-        'client', 'agent'
-    ).prefetch_related('messages').order_by('-created_at')
+    client_rooms = client_rooms.select_related('client', 'agent').prefetch_related('messages')
 
-    rooms_with_unread = []
-    for room in rooms:
+    for room in client_rooms:
         unread = room.messages.filter(
             is_read=False,
         ).exclude(sender=request.user).count()
         last_message = room.messages.order_by('-created_at').first()
-        rooms_with_unread.append({
-            'room': room,
-            'unread': unread,
-            'last_message': last_message,
+        items.append({
+            'type': 'client',
+            'title': room.client.get_full_name() or room.client.username,
+            'subtitle': room.client.email,
             'is_general': room.agent is None,
+            'unread': unread,
+            'last_message': last_message.text if last_message else None,
+            'last_message_time': last_message.created_at if last_message else room.created_at,
+            'url': reverse('chat:agent_room', kwargs={'pk': room.pk}),
         })
 
-    # Сортируем — сначала непрочитанные
-    rooms_with_unread.sort(key=lambda x: (
+    # ── Внутренние чаты сотрудников ──────────────────────────────────────
+    internal_chats = InternalChat.objects.filter(
+        agency=request.user.agency,
+        participants=request.user,
+    ).prefetch_related('participants', 'messages')
+
+    for chat in internal_chats:
+        unread = chat.messages.exclude(
+            sender=request.user,
+        ).exclude(
+            read_by__user=request.user,
+        ).count()
+        last_message = chat.messages.order_by('-created_at').first()
+        items.append({
+            'type': 'internal',
+            'title': chat.get_display_name(request.user),
+            'subtitle': 'Групповой чат' if chat.is_group else 'Личный чат',
+            'is_group': chat.is_group,
+            'unread': unread,
+            'last_message': last_message.text if last_message else None,
+            'last_message_time': last_message.created_at if last_message else chat.created_at,
+            'url': reverse('chat:internal_room', kwargs={'pk': chat.pk}),
+        })
+
+    # Сортируем: сначала непрочитанные, потом по времени последнего сообщения
+    items.sort(key=lambda x: (
         -x['unread'],
-        -(x['last_message'].created_at.timestamp()
-          if x['last_message'] else 0)
+        -(x['last_message_time'].timestamp() if x['last_message_time'] else 0)
     ))
 
-    # Общее количество непрочитанных для бейджа
-    total_unread = sum(r['unread'] for r in rooms_with_unread)
+    total_unread = sum(item['unread'] for item in items)
 
-    return render(request, 'chat/agent_list.html', {
-        'rooms': rooms_with_unread,
+    # Список коллег для быстрого создания нового внутреннего чата
+    colleagues = User.objects.filter(
+        agency=request.user.agency, is_active=True,
+    ).exclude(pk=request.user.pk)
+
+    return render(request, 'chat/list.html', {
+        'items': items,
         'total_unread': total_unread,
+        'colleagues': colleagues,
     })
 
 @never_cache
