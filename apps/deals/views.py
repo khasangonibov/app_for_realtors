@@ -1,25 +1,52 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib import messages
+from django.db.models import Q
 
 from apps.accounts.decorators import crm_required
+from apps.core.exports import create_excel_response, style_header_row, finalize_excel
 from .models import Deal
-from .forms import DealForm
-from apps.core.exports import (
-    create_excel_response, style_header_row, finalize_excel
-)
+from .forms import DealForm, DealFilterForm
 
+
+def _base_queryset(user):
+    """Базовая выборка сделок агентства — видно всем сотрудникам."""
+    return Deal.objects.filter(agency=user.agency)
+
+
+def _apply_filters(form, queryset):
+    """Фильтрация queryset по данным DealFilterForm."""
+    if not form.is_valid():
+        return queryset
+
+    if form.cleaned_data.get('stage'):
+        queryset = queryset.filter(stage=form.cleaned_data['stage'])
+    if form.cleaned_data.get('agent'):
+        queryset = queryset.filter(agent=form.cleaned_data['agent'])
+    if form.cleaned_data.get('search'):
+        search = form.cleaned_data['search']
+        queryset = queryset.filter(
+            Q(property__city__icontains=search) |
+            Q(property__street__icontains=search) |
+            Q(buyer_contact__first_name__icontains=search) |
+            Q(buyer_contact__last_name__icontains=search) |
+            Q(seller_contact__first_name__icontains=search) |
+            Q(seller_contact__last_name__icontains=search)
+        )
+    return queryset
 
 
 @crm_required
 def deal_board(request):
-    """Kanban-доска сделок по стадиям."""
-    queryset = Deal.objects.filter(
-        agency=request.user.agency
-    ).select_related('property', 'buyer_contact', 'agent')
+    """Kanban-доска сделок — видно всем сотрудникам агентства,
+    с фильтрами по стадии, риелтору и поиском.
+    """
+    queryset = _base_queryset(request.user).select_related(
+        'property', 'buyer_contact', 'seller_contact', 'agent'
+    )
 
+    form = DealFilterForm(request.GET, agency=request.user.agency)
+    queryset = _apply_filters(form, queryset)
 
-    # Группируем сделки по стадиям для kanban
-    # Исключаем закрытые и отменённые — они в отдельном списке
     active_stages = [
         Deal.Stage.NEGOTIATION,
         Deal.Stage.DEPOSIT,
@@ -34,7 +61,6 @@ def deal_board(request):
             'deals': queryset.filter(stage=stage),
         }
 
-    # Закрытые и отменённые сделки — отдельным списком внизу
     finished = queryset.filter(
         stage__in=[Deal.Stage.CLOSED, Deal.Stage.CANCELLED]
     ).order_by('-close_date')[:10]
@@ -43,6 +69,7 @@ def deal_board(request):
         'board': board,
         'finished': finished,
         'total_count': queryset.count(),
+        'form': form,
     })
 
 
@@ -69,12 +96,10 @@ def deal_create(request):
 
 @crm_required
 def deal_edit(request, pk):
-    """Редактировать может только назначенный агент или менеджер/админ."""
     deal = get_object_or_404(
         Deal, pk=pk, agency=request.user.agency
     )
 
-    # Проверка прав на редактирование
     if request.user.is_agent and deal.agent != request.user:
         messages.error(request, 'Редактировать сделку может только назначенный риелтор.')
         return redirect('deals:board')
@@ -91,17 +116,20 @@ def deal_edit(request, pk):
     return render(request, 'deals/form.html', {
         'form': form,
         'deal': deal,
-        'title': f'Редактировать сделку',
+        'title': 'Редактировать сделку',
         'submit_label': 'Сохранить',
     })
-    
+
 
 @crm_required
 def deal_export_excel(request):
-    """Экспорт сделок в Excel."""
-    queryset = Deal.objects.filter(
-        agency=request.user.agency
-    ).select_related('property', 'buyer_contact', 'seller_contact', 'agent')
+    """Экспорт сделок в Excel — только те, что проходят по текущим фильтрам."""
+    queryset = _base_queryset(request.user).select_related(
+        'property', 'buyer_contact', 'seller_contact', 'agent'
+    )
+
+    form = DealFilterForm(request.GET, agency=request.user.agency)
+    queryset = _apply_filters(form, queryset)
 
     from datetime import datetime
     filename = f"deals_{datetime.now().strftime('%Y%m%d_%H%M')}.xlsx"

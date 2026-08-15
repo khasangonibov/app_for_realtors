@@ -100,3 +100,25 @@ def notify_new_deal(deal):
             context={'deal': deal, 'manager': manager},
             to_email=manager.email,
         )
+        
+
+def notify_selection_created(selection):
+    """Отправляет клиенту ссылку на подборку объектов."""
+    if not selection.contact or not selection.contact.email:
+        return
+
+    from django.contrib.sites.models import Site
+    current_site = Site.objects.get_current()
+    protocol = 'https' if not settings.DEBUG else 'http'
+    full_url = f'{protocol}://{current_site.domain}{selection.get_public_url()}'
+
+    send_html_email(
+        subject=f'Подборка объектов для вас — «{selection.title}»',
+        template_name='notifications/email/selection_link.html',
+        context={
+            'selection': selection,
+            'items_count': selection.items.count(),
+            'full_url': full_url,
+        },
+        to_email=selection.contact.email,
+    )

@@ -50,9 +50,9 @@
                     </a>
                     <form method="post" action="{% url 'tasks:done' task.pk %}">
                         {% csrf_token %}
-                        <button type="submit" class="btn btn-success btn-sm">
+                        <a href="{% url 'tasks:done' task.pk %}" class="btn btn-success btn-sm">
                             Выполнено
-                        </button>
+                        </a>
                     </form>
                 </div>
             </div>
@@ -67,31 +67,103 @@
                 🔔 Ожидают подтверждения ({{ pending_approval|length }})
             </h2>
             {% for task in pending_approval %}
-            <div class="bg-white rounded border border-warning mb-2 p-3 d-flex justify-content-between align-items-center">
-                <div>
-                    <span class="fw-semibold">{{ task.title }}</span>
-                    <div class="text-muted small mt-1">
-                        Исполнитель: {{ task.agent.get_full_name|default:task.agent.username }}
-                        {% if task.contact %} · {{ task.contact.full_name }}{% endif %}
+            <div class="bg-white rounded border border-warning mb-2 p-3">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <span class="fw-semibold">{{ task.title }}</span>
+                        <div class="text-muted small mt-1">
+                            Исполнитель: {{ task.agent.get_full_name|default:task.agent.username }}
+                            {% if task.contact %} · {{ task.contact.full_name }}{% endif %}
+                        </div>
+                        {% if task.completion_comment %}
+                        <div class="text-muted small mt-1">
+                            💬 {{ task.completion_comment }}
+                        </div>
+                        {% endif %}
+                        <div class="text-muted small">
+                            Отмечено выполненным: {{ task.done_at|date:"d.m.Y H:i" }}
+                        </div>
                     </div>
-                    <div class="text-muted small">
-                        Отмечено выполненным: {{ task.done_at|date:"d.m.Y H:i" }}
-                    </div>
-                </div>
-                <div class="d-flex gap-2">
-                    <form method="post" action="{% url 'tasks:approve' task.pk %}">
-                        {% csrf_token %}
-                        <button type="submit" class="btn btn-success btn-sm">
-                            ✓ Подтвердить
-                        </button>
-                    </form>
-                    <form method="post" action="{% url 'tasks:reject' task.pk %}">
-                        {% csrf_token %}
-                        <button type="submit" class="btn btn-outline-danger btn-sm"
-                                onclick="return confirm('Вернуть задачу в работу?')">
+                    <div class="d-flex gap-2">
+                        <form method="post" action="{% url 'tasks:approve' task.pk %}">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-success btn-sm">
+                                ✓ Подтвердить
+                            </button>
+                        </form>
+                        <button type="button" class="btn btn-outline-danger btn-sm"
+                                data-bs-toggle="modal" data-bs-target="#rejectModal{{ task.pk }}">
                             Отклонить
                         </button>
+                    </div>
+                </div>
+            </div>
+
+            {# Модалка отклонения — своя для каждой задачи, id завязан на task.pk #}
+            <div class="modal fade" id="rejectModal{{ task.pk }}" tabindex="-1">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <form method="post" action="{% url 'tasks:reject' task.pk %}">
+                            {% csrf_token %}
+                            <div class="modal-header">
+                                <h5 class="modal-title">Отклонить выполнение</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body">
+                                {% if task.completion_comment %}
+                                <div class="alert alert-light border small mb-3">
+                                    <strong>Комментарий риелтора:</strong> {{ task.completion_comment }}
+                                </div>
+                                {% endif %}
+                                <label class="form-label">Причина отклонения</label>
+                                <textarea name="rejection_comment" class="form-control" rows="3" required
+                                        placeholder="Что нужно доработать..."></textarea>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Отмена</button>
+                                <button type="submit" class="btn btn-danger">Отклонить</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+       
+
+        {% if rejected %}
+        <div class="mb-4">
+            <h2 class="h5 text-danger mb-3">
+                ↩ Выполнение отменено ({{ rejected|length }})
+            </h2>
+            {% for task in rejected %}
+            <div class="bg-white rounded border border-danger mb-2 p-3">
+                <span class="fw-semibold">{{ task.title }}</span>
+                {% if task.rejection_comment %}
+                <div class="text-danger small mt-1">
+                    Причина: {{ task.rejection_comment }}
+                </div>
+                {% endif %}
+                <div class="text-muted small mt-1">
+                    Срок: {{ task.due_date|date:"d.m.Y H:i" }}
+                </div>
+                <div class="mt-2">
+                    {% if request.user.is_agent and task.needs_approval %}
+                    <a href="{% url 'tasks:edit' task.pk %}" class="btn btn-outline-secondary btn-sm">
+                        Открыть
+                    </a>
+                    {% else %}
+                    <a href="{% url 'tasks:edit' task.pk %}" class="btn btn-outline-secondary btn-sm">
+                        Изменить
+                    </a>
+                    <form method="post" action="{% url 'tasks:done' task.pk %}" class="d-inline">
+                        {% csrf_token %}
+                        <a href="{% url 'tasks:done' task.pk %}" class="btn btn-success btn-sm">
+                            Выполнено
+                        </a>
                     </form>
+                    {% endif %}
                 </div>
             </div>
             {% endfor %}
@@ -128,9 +200,9 @@
                     {% if not task.is_done %}
                     <form method="post" action="{% url 'tasks:done' task.pk %}">
                         {% csrf_token %}
-                        <button type="submit" class="btn btn-success btn-sm">
+                        <a href="{% url 'tasks:done' task.pk %}" class="btn btn-success btn-sm">
                             Выполнено
-                        </button>
+                        </a>
                     </form>
                     {% else %}
                     <span class="badge bg-warning text-dark align-self-center">

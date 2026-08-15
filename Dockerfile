@@ -10,7 +10,7 @@ WORKDIR /app
 
 # Сначала копируем requirements (кэш слоёв Docker)
 COPY requirements/ requirements/
-RUN pip install --no-cache-dir -r requirements/production.txt
+RUN pip install --no-cache-dir -r requirements/development.txt
 
 # Копируем весь проект
 COPY . .

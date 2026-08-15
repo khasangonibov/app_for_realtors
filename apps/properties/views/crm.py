@@ -265,21 +265,15 @@ def photo_set_cover(request, pk, photo_pk):
 
 @crm_required
 def property_export_excel(request):
-    """Экспорт объектов недвижимости в Excel."""
-    # Берём тот же queryset что и в списке
+    """Экспорт объектов недвижимости в Excel.
+    Экспортирует ровно те объекты, что проходят по текущим фильтрам —
+    та же логика, что и в списке (_base_queryset + _apply_filters),
+    чтобы поведение не расходилось.
+    """
     queryset = _base_queryset(request.user).select_related('agent')
 
-    # Применяем фильтры если есть
-    status = request.GET.get('status')
-    deal_type = request.GET.get('deal_type')
-    city = request.GET.get('city')
-
-    if status:
-        queryset = queryset.filter(status=status)
-    if deal_type:
-        queryset = queryset.filter(deal_type=deal_type)
-    if city:
-        queryset = queryset.filter(city__icontains=city)
+    form = PropertyFilterForm(request.GET)
+    queryset = _apply_filters(form, queryset)
 
     from datetime import datetime
     filename = f"objects_{datetime.now().strftime('%Y%m%d_%H%M')}.xlsx"
@@ -287,7 +281,6 @@ def property_export_excel(request):
 
     ws.title = 'Объекты недвижимости'
 
-    # Заголовки
     headers = [
         '№', 'Тип сделки', 'Тип объекта', 'Статус',
         'Город', 'Район', 'Улица', 'Дом',
@@ -300,7 +293,6 @@ def property_export_excel(request):
     ]
     style_header_row(ws, headers)
 
-    # Данные
     for i, prop in enumerate(queryset, 1):
         ws.append([
             i,

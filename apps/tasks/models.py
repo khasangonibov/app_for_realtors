@@ -70,6 +70,17 @@ class Task(UUIDModel, TimeStampedModel):
         null=True, blank=True,
     )
 
+     # Комментарий риелтора при отметке "выполнено" — что сделано
+    completion_comment = models.TextField('Комментарий к выполнению', blank=True)
+
+    # Причина отклонения от руководителя — почему не подтвердил
+    rejection_comment = models.TextField('Причина отклонения', blank=True)
+
+    # Флаг — задача была отклонена и ждёт повторного выполнения
+    # (используем чтобы показать отдельную графу на фронтенде,
+    # даже когда is_done уже снова False)
+    was_rejected = models.BooleanField('Было отклонено', default=False)
+    
     class Meta:
         verbose_name = 'Задача'
         verbose_name_plural = 'Задачи'

@@ -135,9 +135,25 @@ def contact_export_excel(request):
         agency=request.user.agency
     ).select_related('agent')
 
-    status = request.GET.get('status')
+    # Поиск
+    search = request.GET.get('search', '').strip()
+    if search:
+        queryset = queryset.filter(
+            Q(first_name__icontains=search) |
+            Q(last_name__icontains=search) |
+            Q(phone__icontains=search) |
+            Q(email__icontains=search)
+        )
+
+    # Статус
+    status = request.GET.get('status', '')
     if status:
         queryset = queryset.filter(status=status)
+
+    # Тип контакта
+    contact_type = request.GET.get('contact_type', '')
+    if contact_type:
+        queryset = queryset.filter(contact_type=contact_type)
 
     from datetime import datetime
     filename = f"contacts_{datetime.now().strftime('%Y%m%d_%H%M')}.xlsx"

@@ -1,5 +1,7 @@
 from django import forms
 from .models import Deal
+from apps.accounts.models import User
+
 
 
 class DealForm(forms.ModelForm):
@@ -69,3 +71,35 @@ class DealForm(forms.ModelForm):
                 self.fields['seller_contact'].queryset.filter(agency=agency)
             self.fields['buyer_contact'].queryset = \
                 self.fields['buyer_contact'].queryset.filter(agency=agency)
+                
+                
+class DealFilterForm(forms.Form):
+    """Форма фильтрации сделок на kanban-доске."""
+    stage = forms.ChoiceField(
+        label='Стадия',
+        choices=[('', 'Все стадии')] + list(Deal.Stage.choices),
+        required=False,
+        widget=forms.Select(attrs={'class': 'form-select form-select-sm'}),
+    )
+    agent = forms.ModelChoiceField(
+        label='Риелтор',
+        queryset=User.objects.none(),
+        required=False,
+        widget=forms.Select(attrs={'class': 'form-select form-select-sm select2'}),
+    )
+    search = forms.CharField(
+        label='Поиск',
+        required=False,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control form-control-sm',
+            'placeholder': 'Объект, покупатель, продавец...',
+        }),
+    )
+
+    def __init__(self, *args, agency=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        if agency:
+            self.fields['agent'].queryset = User.objects.filter(
+                agency=agency, is_active=True,
+            )
+        self.fields['agent'].empty_label = 'Все риелторы'

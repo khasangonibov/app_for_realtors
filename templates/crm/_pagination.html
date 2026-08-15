@@ -7,13 +7,13 @@
         {% if page_obj.has_previous %}
         <li class="page-item">
             <a class="page-link"
-                href="{% page_url 1 %}"                
+                href="{% page_url 1 %}">                
                 «
             </a>
         </li>
         <li class="page-item">
             <a class="page-link"
-                href="{% page_url page_obj.previous_page_number %}"                
+                href="{% page_url page_obj.previous_page_number %}">                
                 ‹
             </a>
         </li>
@@ -27,8 +27,7 @@
             </li>
             {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
             <li class="page-item">
-                <a class="page-link"
-href="{% page_url num %}"
+                <a class="page-link" href="{% page_url num %}">
                     {{ num }}
                 </a>
             </li>
@@ -39,13 +38,13 @@ href="{% page_url num %}"
         {% if page_obj.has_next %}
         <li class="page-item">
             <a class="page-link"
-                href="{% page_url page_obj.next_page_number %}"
+                href="{% page_url page_obj.next_page_number %}">
                 ›
             </a>
         </li>
         <li class="page-item">
             <a class="page-link"
-                href="{% page_url page_obj.paginator.num_pages %}"
+                href="{% page_url page_obj.paginator.num_pages %}">
                 »
             </a>
         </li>

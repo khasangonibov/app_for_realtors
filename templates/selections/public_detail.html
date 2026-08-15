@@ -27,28 +27,30 @@
             {# Фотогалерея объекта #}
             {% with photos=item.property.photos.all %}
             {% if photos %}
-            <div id="gallery-{{ item.pk }}" class="carousel slide" data-bs-ride="false">
-                <div class="carousel-inner">
-                    {% for photo in photos %}
-                    <div class="carousel-item {% if forloop.first %}active{% endif %}">
-                        <img src="{{ photo.image.url }}"
-                             class="d-block w-100"
-                             style="height: 300px; object-fit: cover;"
-                             alt="">
+                <div id="gallery-{{ item.pk }}" class="carousel slide" data-bs-ride="false">
+                    <div class="carousel-inner">
+                        {% for photo in photos %}
+                        <div class="carousel-item {% if forloop.first %}active{% endif %}">
+                            <a href="{% url 'public:property_detail' item.property.agency.slug item.property.pk item.property.public_token %}">
+                                <img src="{{ photo.image.url }}"
+                                    class="d-block w-100"
+                                    style="height: 300px; object-fit: cover;"
+                                    alt="">
+                            </a>
+                        </div>
+                        {% endfor %}
                     </div>
-                    {% endfor %}
+                    {% if photos|length > 1 %}
+                    <button class="carousel-control-prev" type="button"
+                            data-bs-target="#gallery-{{ item.pk }}" data-bs-slide="prev">
+                        <span class="carousel-control-prev-icon"></span>
+                    </button>
+                    <button class="carousel-control-next" type="button"
+                            data-bs-target="#gallery-{{ item.pk }}" data-bs-slide="next">
+                        <span class="carousel-control-next-icon"></span>
+                    </button>
+                    {% endif %}
                 </div>
-                {% if photos|length > 1 %}
-                <button class="carousel-control-prev" type="button"
-                        data-bs-target="#gallery-{{ item.pk }}" data-bs-slide="prev">
-                    <span class="carousel-control-prev-icon"></span>
-                </button>
-                <button class="carousel-control-next" type="button"
-                        data-bs-target="#gallery-{{ item.pk }}" data-bs-slide="next">
-                    <span class="carousel-control-next-icon"></span>
-                </button>
-                {% endif %}
-            </div>
             {% else %}
             <div class="bg-secondary-subtle d-flex align-items-center justify-content-center"
                  style="height: 200px;">
@@ -61,28 +63,38 @@
                 <div class="row">
                     <div class="col-md-8">
 
-                        {# Заголовок объекта #}
-                        <h2 class="h5 mb-1">
-                            {{ item.property.get_deal_type_display }}
-                            {{ item.property.get_property_type_display|lower }}
-                            {% if item.property.area_total %}, {{ item.property.area_total }} м²{% endif %}
-                            {% if item.property.floor and item.property.floors_total %}
-                                , {{ item.property.floor }}/{{ item.property.floors_total }} этаж
-                            {% endif %}
-                        </h2>
-                        <p class="text-muted mb-3">
-                            {{ item.property.city }}{% if item.property.street %}, {{ item.property.street }}{% endif %}{% if item.property.building %}, {{ item.property.building }}{% endif %}
-                        </p>
-                        <p class="h4 text-primary mb-3">
-                            {{ item.property.price|intcomma }} ₽
-                        </p>
+                        <a href="{% url 'public:property_detail' item.property.agency.slug item.property.pk item.property.public_token %}"
+                        class="text-decoration-none text-dark">
 
-                        {# Комментарий риелтора #}
+                            {# Заголовок объекта #}
+                            <h2 class="h5 mb-1">
+                                {{ item.property.get_deal_type_display }}
+                                {{ item.property.get_property_type_display|lower }}
+                                {% if item.property.area_total %}, {{ item.property.area_total }} м²{% endif %}
+                                {% if item.property.floor and item.property.floors_total %}
+                                    , {{ item.property.floor }}/{{ item.property.floors_total }} этаж
+                                {% endif %}
+                            </h2>
+                            <p class="text-muted mb-3">
+                                {{ item.property.city }}{% if item.property.street %}, {{ item.property.street }}{% endif %}{% if item.property.building %}, {{ item.property.building }}{% endif %}
+                            </p>
+                            <p class="h4 text-primary mb-3">
+                                {{ item.property.price|intcomma }} ₽
+                            </p>
+
+                        </a>
+
+                        {# Комментарий риелтора — вне ссылки, просто текст #}
                         {% if item.agent_comment %}
                         <div class="alert alert-info py-2 small">
                             <strong>Комментарий риелтора:</strong> {{ item.agent_comment }}
                         </div>
                         {% endif %}
+
+                        <a href="{% url 'public:property_detail' item.property.agency.slug item.property.pk item.property.public_token %}"
+                        class="btn btn-outline-primary btn-sm">
+                            Подробнее об объекте →
+                        </a>
 
                     </div>
 

@@ -49,7 +49,7 @@ class Contact(UUIDModel, TimeStampedModel):
     last_name = models.CharField('Фамилия', max_length=100, blank=True)
     middle_name = models.CharField('Отчество', max_length=100, blank=True)
     phone = models.CharField('Телефон', max_length=20)
-    email = models.EmailField('Email', blank=True)
+    email = models.EmailField('Email', max_length=100)
 
     # ── Тип, статус, источник ─────────────────────────────────────────────
     contact_type = models.CharField(

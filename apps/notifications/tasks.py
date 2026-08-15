@@ -86,3 +86,16 @@ def send_new_deal_email(deal_id):
         notify_new_deal(deal)
     except Deal.DoesNotExist:
         pass
+    
+    
+@shared_task(name='notifications.send_selection_link_email')
+def send_selection_link_email(selection_id):
+    """Отправляет клиенту email со ссылкой на подборку."""
+    from apps.selections.models import Selection
+    from .email import notify_selection_created
+
+    try:
+        selection = Selection.objects.select_related('contact', 'agent').get(pk=selection_id)
+        notify_selection_created(selection)
+    except Selection.DoesNotExist:
+        pass

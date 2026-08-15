@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+
+{% block title %}{{ task.title }}{% endblock %}
+
+{% block content %}
+<div class="bg-light min-vh-100">
+    <div class="container py-4">
+
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1 class="h4 mb-0">{{ task.title }}</h1>
+            <a href="{% url 'tasks:list' %}" class="btn btn-outline-secondary btn-sm">
+                ← Назад к задачам
+            </a>
+        </div>
+
+        <div class="alert alert-info small">
+            Эту задачу вам назначил {{ task.assigned_by.get_full_name }} —
+            редактировать её нельзя, только отметить выполнение.
+        </div>
+
+        <div class="bg-white rounded border p-4 mb-4">
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <div class="text-muted small">Тип</div>
+                    <div>{{ task.get_task_type_display }}</div>
+                </div>
+                <div class="col-md-4">
+                    <div class="text-muted small">Приоритет</div>
+                    <div>{{ task.get_priority_display }}</div>
+                </div>
+                <div class="col-md-4">
+                    <div class="text-muted small">Срок</div>
+                    <div class="{% if task.is_overdue %}text-danger fw-semibold{% endif %}">
+                        {{ task.due_date|date:"d.m.Y H:i" }}
+                    </div>
+                </div>
+                {% if task.contact %}
+                <div class="col-md-6">
+                    <div class="text-muted small">Контакт</div>
+                    <div>{{ task.contact.full_name }}</div>
+                </div>
+                {% endif %}
+                {% if task.related_property %}
+                <div class="col-md-6">
+                    <div class="text-muted small">Объект</div>
+                    <div>{{ task.related_property.city }}{% if task.related_property.street %}, {{ task.related_property.street }}{% endif %}</div>
+                </div>
+                {% endif %}
+                {% if task.description %}
+                <div class="col-12">
+                    <div class="text-muted small">Описание</div>
+                    <div>{{ task.description }}</div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        {% if task.was_rejected and task.rejection_comment %}
+        <div class="alert alert-warning">
+            <strong>Выполнение отклонено:</strong> {{ task.rejection_comment }}
+        </div>
+        {% endif %}
+
+        {% if not task.is_done %}
+        <a href="{% url 'tasks:done' task.pk %}" class="btn btn-success">
+            ✓ Отметить выполненной
+        </a>
+        {% else %}
+        <div class="badge bg-warning text-dark p-2">
+            Ожидает подтверждения от {{ task.assigned_by.get_full_name }}
+        </div>
+        {% endif %}
+
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head><meta charset="UTF-8"></head>
+<body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+
+    <div style="background: #0d6efd; color: white; padding: 20px; border-radius: 8px 8px 0 0;">
+        <h1 style="margin: 0; font-size: 20px;">Подборка объектов для вас</h1>
+    </div>
+
+    <div style="background: #f8f9fa; padding: 20px; border: 1px solid #dee2e6;">
+        <p>Здравствуйте, {{ selection.contact.full_name }}!</p>
+        <p>
+            {{ selection.agent.get_full_name|default:"Ваш риелтор" }} подготовил(а)
+            для вас подборку «<strong>{{ selection.title }}</strong>»
+            ({{ items_count }} объект{{ items_count|pluralize:"ов,а," }}).
+        </p>
+
+        <div style="text-align: center; margin: 24px 0;">
+            <a href="{{ full_url }}"
+               style="background: #0d6efd; color: white; padding: 12px 24px; border-radius: 6px; text-decoration: none; display: inline-block;">
+                Посмотреть подборку
+            </a>
+        </div>
+
+        <p style="color: #6c757d; font-size: 14px;">
+            В подборке можно оставить реакцию на каждый объект —
+            «нравится», «возможно» или «не нравится» — чтобы риелтор
+            сразу понимал ваши предпочтения.
+        </p>
+    </div>
+
+    <div style="background: #e9ecef; padding: 12px 20px; border-radius: 0 0 8px 8px; font-size: 12px; color: #6c757d;">
+        Это автоматическое письмо от CRM системы.
+    </div>
+
+</body>
+</html>

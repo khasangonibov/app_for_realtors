@@ -62,3 +62,16 @@ class TaskForm(forms.ModelForm):
             field_order = ['title', 'agent', 'task_type', 'priority',
                             'due_date', 'contact', 'related_property', 'description']
             self.order_fields(field_order)
+            
+            
+class TaskCompletionForm(forms.Form):
+    """Форма комментария при отметке задачи выполненной."""
+    comment = forms.CharField(
+        label='Комментарий к выполнению',
+        widget=forms.Textarea(attrs={
+            'class': 'form-control',
+            'rows': 3,
+            'placeholder': 'Кратко опишите что сделано...',
+        }),
+        required=True,
+    )

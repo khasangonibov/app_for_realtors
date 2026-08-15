@@ -168,3 +168,34 @@ def selection_item_delete(request, pk, item_pk):
         messages.success(request, 'Объект удалён из подборки.')
 
     return redirect('selections:detail', pk=pk)
+
+
+@crm_required
+def selection_send_email(request, pk):
+    """Отправляет клиенту email со ссылкой на подборку."""
+    selection = get_object_or_404(
+        Selection, pk=pk, agency=request.user.agency
+    )
+
+    can_edit = (
+        not request.user.is_agent
+        or selection.agent == request.user
+    )
+    if not can_edit:
+        messages.error(request, 'Отправлять подборку может только её создатель.')
+        return redirect('selections:detail', pk=pk)
+
+    if not selection.contact:
+        messages.error(request, 'У подборки нет привязанного клиента — некому отправлять письмо.')
+        return redirect('selections:detail', pk=pk)
+
+    if not selection.contact.email:
+        messages.error(request, 'У клиента не указан email.')
+        return redirect('selections:detail', pk=pk)
+
+    if request.method == 'POST':
+        from apps.notifications.tasks import send_selection_link_email
+        send_selection_link_email.apply_async(args=[str(selection.pk)], countdown=3)
+        messages.success(request, f'Письмо отправляется на {selection.contact.email}.')
+
+    return redirect('selections:detail', pk=pk)
