@@ -36,7 +36,7 @@ LOGGING = {
     'loggers': {
         'django.db.backends': {
             'handlers': ['console'],
-            'level': 'DEBUG',   # показывает все SQL запросы
+            'level': 'WARNING',   
             'propagate': False,
         },
     },

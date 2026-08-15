@@ -38,18 +38,210 @@ RAW = [('Москва', 'Хорошёвский', 'Хорошёвское шос
 # Two additional varied cards, bringing the catalog to exactly 50.
 RAW += [('Казань', 'Вахитовский', 'улица Островского', '35', '64', 'apartment', 'sale', 4, 109.5, 63, 19, 7, 9, 21800000, 'Премиальная 4-комнатная квартира в центре Казани', 'Кухня-гостиная, три спальни, кабинет, два санузла, гардеробная, закрытый двор и паркинг.', 'Монолитно-кирпичный|2 санузла|Лоджия|2 лифта|Подземная|Дизайнерский|На обе стороны', 'kazan luxury apartment designer kitchen living room bedrooms'), ('Ростов-на-Дону', 'Советский', 'улица Малиновского', '78', '211', 'apartment', 'sale', 2, 52.6, 29.5, 10.2, 13, 20, 6950000, 'Двухкомнатная квартира в новом ЖК', 'Кухня-гостиная, отдельная спальня, лоджия, гардеробная, закрытая территория и подземный паркинг.', 'Монолитный|Совмещённый|Лоджия|2 лифта|Подземная|Евро|На улицу', 'rostov modern apartment kitchen living room bedroom balcony')]
 
-FEATURE_KEYS=['Тип дома','Санузел','Балкон','Лифт','Парковка','Отопление','Ремонт','Окна']
+FEATURE_KEYS = [
+    'Тип дома',
+    'Санузел',
+    'Балкон',
+    'Лифт',
+    'Парковка',
+    'Отопление',
+    'Ремонт',
+    'Окна',
+]
+
+
+def build_features(ptype, raw_features):
+    """
+    Преобразует старые 7 характеристик из RAW
+    в правильные значения согласно FEATURE_CHOICES.
+
+    RAW:
+        Тип дома | Санузел | Балкон | Лифт | Парковка | Ремонт | Окна
+
+    В старом RAW поле после парковки фактически означает Ремонт,
+    поэтому отопление добавляем отдельно.
+    """
+
+    vals = raw_features.split('|')
+
+    # В RAW сейчас 7 значений:
+    # 0 Тип дома
+    # 1 Санузел
+    # 2 Балкон
+    # 3 Лифт
+    # 4 Парковка
+    # 5 Ремонт
+    # 6 Окна
+
+    f = {}
+
+    if len(vals) >= 7:
+        f['Тип дома'] = vals[0]
+        f['Санузел'] = vals[1]
+        f['Балкон'] = vals[2]
+        f['Лифт'] = vals[3]
+        f['Парковка'] = vals[4]
+        f['Ремонт'] = vals[5]
+        f['Окна'] = vals[6]
+
+    # ---------------------------------------------------------
+    # Дополнительные характеристики
+    # ---------------------------------------------------------
+
+    if ptype in ('apartment', 'townhouse', 'house'):
+        f['Отопление'] = random.choice([
+            'Центральное',
+            'Центральное',
+            'Индивидуальное',
+        ])
+
+        f['Интернет'] = random.choice([
+            'Есть',
+            'Есть',
+            'Оптоволокно',
+        ])
+
+        if ptype == 'apartment':
+            f['Мебель'] = random.choice([
+                'Без мебели',
+                'Частично',
+                'Кухня',
+                'Полностью меблирована',
+            ])
+        else:
+            f['Мебель'] = random.choice([
+                'Без мебели',
+                'Частично',
+                'Кухня',
+            ])
+
+        f['Тип перекрытий'] = random.choice([
+            'Железобетонные',
+            'Железобетонные',
+            'Смешанные',
+        ])
+
+        f['Высота потолков'] = random.choice([
+            '2.5 – 2.7 м',
+            '2.7 – 3 м',
+            '2.7 – 3 м',
+            'Более 3 м',
+        ])
+
+        if ptype == 'house':
+            f['Газ'] = random.choice([
+                'Есть',
+                'Есть',
+                'Нет',
+            ])
+        else:
+            f['Газ'] = random.choice([
+                'Нет',
+                'Нет',
+                'Есть',
+            ])
+
+        f['Мусоропровод'] = random.choice([
+            'Есть',
+            'Нет',
+        ])
+
+    elif ptype == 'commercial':
+        f['Отопление'] = random.choice([
+            'Центральное',
+            'Индивидуальное',
+        ])
+        f['Интернет'] = random.choice([
+            'Есть',
+            'Оптоволокно',
+        ])
+        f['Мебель'] = random.choice([
+            'Без мебели',
+            'Частично',
+        ])
+        f['Тип перекрытий'] = 'Железобетонные'
+        f['Высота потолков'] = random.choice([
+            '2.7 – 3 м',
+            'Более 3 м',
+        ])
+        f['Газ'] = 'Нет'
+        f['Мусоропровод'] = random.choice([
+            'Есть',
+            'Нет',
+        ])
+
+    elif ptype == 'land':
+        # Для земли характеристики здания не имеют смысла.
+        f = {
+            'Тип дома': '—',
+            'Санузел': '—',
+            'Балкон': '—',
+            'Лифт': 'Нет',
+            'Парковка': 'Наземная',
+            'Отопление': 'Нет',
+            'Ремонт': 'Без ремонта',
+            'Окна': '—',
+            'Интернет': 'Нет',
+            'Мебель': 'Без мебели',
+            'Тип перекрытий': '—',
+            'Высота потолков': '—',
+            'Газ': 'Нет',
+            'Мусоропровод': 'Нет',
+        }
+
+    return f
+
 
 def card(row):
-    city,district,street,building,apt,ptype,dtype,rooms,area,living,kitchen,floor,total,price,title,desc,features,tags=row
-    vals=features.split('|')
-    f=dict(zip(FEATURE_KEYS,vals))
-    return dict(city=city,district=district,street=street,building=building,apartment=apt,property_type=ptype,deal_type=dtype,rooms=rooms,area=area,living=living,kitchen=kitchen,floor=floor,total=total,price=price,title=title,description=desc,features=f,tags=tags)
+    (
+        city,
+        district,
+        street,
+        building,
+        apt,
+        ptype,
+        dtype,
+        rooms,
+        area,
+        living,
+        kitchen,
+        floor,
+        total,
+        price,
+        title,
+        desc,
+        features,
+        tags,
+    ) = row
 
+    f = build_features(ptype, features)
+
+    return {
+        'city': city,
+        'district': district,
+        'street': street,
+        'building': building,
+        'apartment': apt,
+        'property_type': ptype,
+        'deal_type': dtype,
+        'rooms': rooms,
+        'area': area,
+        'living': living,
+        'kitchen': kitchen,
+        'floor': floor,
+        'total': total,
+        'price': price,
+        'title': title,
+        'description': desc,
+        'features': f,
+        'tags': tags,
+    }
+    
 CATALOG=[card(x) for x in RAW]
 
 class Command(BaseCommand):
     help='Создаёт реалистичные тестовые данные CRM'
+    
     def add_arguments(self,p):
         p.add_argument('--clear',action='store_true',help='Удалить тестовые данные перед созданием')
         p.add_argument('--no-photos',action='store_true',help='Не скачивать фотографии')
@@ -97,14 +289,122 @@ class Command(BaseCommand):
             if staff and not u.is_staff: u.is_staff=True; changed=True
             if changed: u.save()
         UserProfile.objects.get_or_create(user=u,defaults={'role':role}); return u
-    def photos(self,prop,tags,count):
-        safe=tags.replace(' ',','); folder=os.path.join(tempfile.gettempdir(),f'crm_prop_{prop.pk}'); os.makedirs(folder,exist_ok=True)
+        
+    @staticmethod
+    def photo_query(prop, tags):
+        tags = tags.lower()
+
+        if prop.property_type == 'apartment':
+            if 'luxury' in tags:
+                return 'luxury,apartment,interior'
+            if 'modern' in tags:
+                return 'modern,apartment,interior'
+            return 'apartment,interior'
+
+        if prop.property_type == 'house':
+            if 'sea' in tags:
+                return 'house,sea,view'
+            if 'luxury' in tags:
+                return 'luxury,house,exterior'
+            return 'house,exterior,garden'
+
+        if prop.property_type == 'townhouse':
+            return 'townhouse,modern,exterior'
+
+        if prop.property_type == 'commercial':
+            if 'office' in tags:
+                return 'office,interior'
+            return 'commercial,interior'
+
+        if prop.property_type == 'land':
+            return 'land,garden,property'
+
+        return 'realestate,property'
+    
+    def photos(self, prop, tags, count):
+        query = self.photo_query(prop, tags)
+
+        folder = os.path.join(
+            tempfile.gettempdir(),
+            f'crm_prop_{prop.pk}'
+        )
+        os.makedirs(folder, exist_ok=True)
+
+        self.stdout.write(
+            f'  Скачиваем фото для #{prop.pk}: {query}'
+        )
+
         for i in range(count):
             try:
-                url=f'https://loremflickr.com/1200/800/{safe}?lock={prop.pk*10+i+1000}'; path=os.path.join(folder,f'{i}.jpg'); urllib.request.urlretrieve(url,path)
-                with open(path,'rb') as f:
-                    p=PropertyPhoto(property=prop,is_cover=i==0,order=i); p.image.save(f'property_{prop.pk}_{i+1}.jpg',File(f),save=True)
+                seed = abs(hash(f'{prop.pk}-{i}-{SEED}')) % 1000000
+
+                url = (
+                    f'https://loremflickr.com/1200/800/'
+                    f'{query}?lock={seed}'
+                )
+
+                self.stdout.write(
+                    f'    URL: {url}'
+                )
+
+                request = urllib.request.Request(
+                    url,
+                    headers={
+                        'User-Agent': 'Mozilla/5.0'
+                    }
+                )
+
+                with urllib.request.urlopen(
+                    request,
+                    timeout=60
+                ) as response:
+                    data = response.read()
+
+                self.stdout.write(
+                    f'    Получено: {len(data)} bytes'
+                )
+
+                if not data:
+                    raise RuntimeError('Сервер вернул пустой файл')
+
+                path = os.path.join(
+                    folder,
+                    f'{i}.jpg'
+                )
+
+                with open(path, 'wb') as f:
+                    f.write(data)
+
+                with open(path, 'rb') as f:
+                    photo = PropertyPhoto(
+                        property=prop,
+                        is_cover=(i == 0),
+                        order=i
+                    )
+
+                    photo.image.save(
+                        f'property_{prop.pk}_{i + 1}.jpg',
+                        File(f),
+                        save=True
+                    )
+
+                self.stdout.write(
+                    self.style.SUCCESS(
+                        f'    OK: property_{prop.pk}_{i + 1}.jpg'
+                    )
+                )
+
                 os.unlink(path)
-            except Exception as e: self.stdout.write(self.style.WARNING(f'Фото для объекта #{prop.pk}: {e}'))
-        try: os.rmdir(folder)
-        except OSError: pass
+
+            except Exception as e:
+                self.stdout.write(
+                    self.style.ERROR(
+                        f'    ОШИБКА фото #{i + 1}: '
+                        f'{type(e).__name__}: {e}'
+                    )
+                )
+
+        try:
+            os.rmdir(folder)
+        except OSError:
+            pass
