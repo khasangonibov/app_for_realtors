@@ -51,7 +51,7 @@ class ManagementContractForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         if agency:
             # Только объекты своего агентства, ещё не в управлении
-            qs = self.fields['related_property'].queryset.filter(agency=agency)
+            qs = self.fields['related_property'].queryset.filter(agency=agency, is_deleted=False,)
             if self.instance.pk:
                 # При редактировании — не исключаем текущий объект
                 qs = qs.filter(
@@ -61,7 +61,7 @@ class ManagementContractForm(forms.ModelForm):
             else:
                 qs = qs.filter(management_contract__isnull=True)
             self.fields['related_property'].queryset = qs
-            self.fields['owner'].queryset = self.fields['owner'].queryset.filter(agency=agency)
+            self.fields['owner'].queryset = self.fields['owner'].queryset.filter(agency=agency, is_deleted=False)
             self.fields['agent'].queryset = self.fields['agent'].queryset.filter(agency=agency)
 
 

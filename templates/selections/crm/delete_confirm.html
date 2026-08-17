@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+
+{% block title %}Удаление подборки{% endblock %}
+
+{% block content %}
+<div class="bg-light min-vh-100">
+    <div class="container py-4">
+        <h1 class="h4 mb-4">Удалить подборку?</h1>
+
+        <div class="bg-white rounded border p-4 mb-4">
+            <div class="fw-semibold">
+                <strong>Название:</strong> {{ selection.title }}<br>
+                <strong>Контакт:</strong> {{ deal.contact }}<br>
+            </div>
+        </div>
+
+        <div class="alert alert-warning">
+            Подборка будет скрыта из списков.<br>
+            Связанные объекты, контакты и история сохранятся в системе.
+        </div>
+
+        <form method="post">
+            {% csrf_token %}
+            <div class="d-flex gap-3">
+                <button type="submit" class="btn btn-danger">
+                    Удалить подборку
+                </button>
+                <a href="{% url 'selections:detail' selection.pk %}" class="btn btn-outline-secondary">
+                    Отмена
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

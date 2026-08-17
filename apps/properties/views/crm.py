@@ -23,11 +23,9 @@ PROPERTIES_PER_PAGE = 12
 def _base_queryset(user):
     """Базовая выборка объектов агентства — одна точка правды.
     Используется списком, расчётом страницы при возврате из формы
-    и экспортом: если правило видимости разойдётся между ними,
-    номера страниц при редиректе перестанут совпадать со списком.
+    и экспортом, Исключает мягко удалённые записи.
     """
-    return Property.objects.filter(agency=user.agency)
-
+    return Property.objects.filter(agency=user.agency, is_deleted=False)
 
 def _apply_filters(form, queryset):
     """Фильтрация queryset по данным PropertyFilterForm.
@@ -320,3 +318,53 @@ def property_export_excel(request):
         ])
 
     return finalize_excel(wb, ws, response, start_row=2, col_count=len(headers))
+
+
+def _check_property_can_delete(property_obj):
+    """Проверяет можно ли удалить объект — есть ли активные связи.
+    Возвращает (True, '') если можно, (False, причина) если нельзя.
+    """
+    from apps.deals.models import Deal
+
+    # Активные сделки по этому объекту
+    active_deal = Deal.objects.filter(
+        property=property_obj, is_deleted=False
+    ).exclude(stage__in=['closed', 'cancelled']).exists()
+    if active_deal:
+        return False, 'У объекта есть активная сделка. Закройте или отмените её перед удалением.'
+
+    # Активный договор доверительного управления
+    if hasattr(property_obj, 'management_contract'):
+        contract = property_obj.management_contract
+        if contract.status == 'active':
+            return False, 'У объекта есть действующий договор доверительного управления. Расторгните его перед удалением.'
+
+    return True, ''
+
+
+@crm_required
+def property_delete(request, pk):
+    """Мягкое удаление объекта — только назначенный агент, менеджер, админ.
+    Запрещено при активной сделке или договоре управления.
+    """
+    property_obj = get_object_or_404(
+        Property, pk=pk, agency=request.user.agency, is_deleted=False,
+    )
+
+    if request.user.is_agent and property_obj.agent != request.user:
+        messages.error(request, 'Удалить объект может только назначенный риелтор.')
+        return redirect('properties:list')
+
+    can_delete, reason = _check_property_can_delete(property_obj)
+    if not can_delete:
+        messages.error(request, f'Нельзя удалить объект: {reason}')
+        return redirect('properties:edit', pk=pk)
+
+    if request.method == 'POST':
+        property_obj.soft_delete()
+        messages.success(request, f'Объект «{property_obj}» удалён.')
+        return redirect('properties:list')
+
+    return render(request, 'properties/crm/delete_confirm.html', {
+        'property': property_obj,
+    })

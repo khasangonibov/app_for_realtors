@@ -26,7 +26,7 @@ class SelectionForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         if agency:
             self.fields['contact'].queryset = \
-                self.fields['contact'].queryset.filter(agency=agency)
+                self.fields['contact'].queryset.filter(agency=agency, is_deleted=False,)
         # Клиент необязателен — можно создать подборку без привязки
         self.fields['contact'].required = False
         self.fields['contact'].empty_label = 'Без клиента'

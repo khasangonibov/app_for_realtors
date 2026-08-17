@@ -16,7 +16,8 @@ class AgencyFilterMixin:
 
     def get_queryset(self):
         qs = Property.objects.filter(
-            agency=self.request.user.agency
+            agency=self.request.user.agency,
+            is_deleted=False, 
         ).select_related('agent').prefetch_related('photos', 'features')
 
         if self.request.user.is_agent:
@@ -49,7 +50,7 @@ class PropertyListCreateView(AgencyFilterMixin, generics.ListCreateAPIView):
         deal_type = self.request.query_params.get('deal_type')
         property_type = self.request.query_params.get('property_type')
         city = self.request.query_params.get('city')
-
+        
         if status:
             qs = qs.filter(status=status)
         if deal_type:
@@ -67,7 +68,7 @@ class PropertyDetailView(AgencyFilterMixin, generics.RetrieveUpdateDestroyAPIVie
     GET    /api/v1/properties/{id}/  — детали объекта
     PUT    /api/v1/properties/{id}/  — обновить объект
     PATCH  /api/v1/properties/{id}/  — частичное обновление
-    DELETE /api/v1/properties/{id}/  — удалить объект
+    DELETE /api/v1/properties/{id}/  — мягкое удаление объекта
     """
     permission_classes = [permissions.IsAuthenticated]
 
@@ -76,6 +77,11 @@ class PropertyDetailView(AgencyFilterMixin, generics.RetrieveUpdateDestroyAPIVie
             return PropertyWriteSerializer
         return PropertyDetailSerializer
 
+    def perform_destroy(self, instance):
+        """Переопределяем стандартное hard delete DRF —
+        используем soft_delete(), как и в остальной системе.
+        """
+        instance.soft_delete()
 
 class PropertyPublicView(APIView):
     """
@@ -89,6 +95,7 @@ class PropertyPublicView(APIView):
             Property,
             public_token=token,
             is_published=True,
+            is_deleted=False, 
         )
         serializer = PropertyDetailSerializer(
             property_obj,

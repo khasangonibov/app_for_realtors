@@ -32,6 +32,11 @@
                     </button>
                 </form>
                 {% endif %}
+                {% if selection %}
+                <a href="{% url 'selections:delete' selection.pk %}" class="btn btn-outline-danger ms-auto">
+                    Удалить подборку
+                </a>
+                {% endif %}
             </div>
         </div>
 

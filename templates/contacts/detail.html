@@ -80,6 +80,10 @@
                     <hr>
                     <div class="text-muted small mb-1">Заметки</div>
                     <p class="small mb-0" style="white-space: pre-line;">{{ contact.notes }}</p>
+                    <hr>
+                    <a href="{% url 'contacts:delete' contact.pk %}" class="btn btn-outline-danger ms-auto">
+                        Удалить контакт
+                    </a>
                     {% endif %}
 
                 </div>

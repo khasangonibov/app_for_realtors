@@ -10,5 +10,6 @@ urlpatterns = [
     path('properties/<uuid:pk>/photos/', views.photo_upload, name='photo_upload'),
     path('properties/<uuid:pk>/photos/<uuid:photo_pk>/delete/', views.photo_delete, name='photo_delete'),
     path('properties/<uuid:pk>/photos/<uuid:photo_pk>/cover/', views.photo_set_cover, name='photo_cover'),
+    path('properties/<uuid:pk>/delete/', views.property_delete, name='delete'),
     path('properties/export/', views.property_export_excel, name='export'),
 ]

@@ -9,4 +9,5 @@ urlpatterns = [
     path('contacts/<uuid:pk>/', views.contact_detail, name='detail'),
     path('contacts/<uuid:pk>/edit/', views.contact_edit, name='edit'),
     path('contacts/export/', views.contact_export_excel, name='export'),
+    path('contacts/<uuid:pk>/delete/', views.contact_delete, name='delete'),
 ]

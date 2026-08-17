@@ -13,7 +13,8 @@ from apps.selections.forms import SelectionForm, SelectionItemForm
 def selection_list(request):
     """Список подборок риелтора."""
     queryset = Selection.objects.filter(
-        agency=request.user.agency
+        agency=request.user.agency,
+        is_deleted=False
     ).select_related('contact', 'agent').prefetch_related('items')
 
     return render(request, 'selections/crm/list.html', {
@@ -87,6 +88,7 @@ def selection_detail(request, pk):
     available_properties = Property.objects.filter(
         agency=request.user.agency,
         is_published=True,
+        is_deleted=False,
     ).exclude(pk__in=added_property_ids).select_related('agent').prefetch_related('photos')
 
     deal_type = request.GET.get('deal_type', '')
@@ -120,7 +122,9 @@ def selection_detail(request, pk):
 
     # Список городов для фильтра
     cities = Property.objects.filter(
-        agency=request.user.agency, is_published=True,
+        agency=request.user.agency, 
+        is_published=True,
+        is_deleted=False,
     ).exclude(pk__in=added_property_ids).values_list(
         'city', flat=True
     ).distinct().order_by('city')
@@ -199,3 +203,25 @@ def selection_send_email(request, pk):
         messages.success(request, f'Письмо отправляется на {selection.contact.email}.')
 
     return redirect('selections:detail', pk=pk)
+
+
+@crm_required
+def selection_delete(request, pk):
+    """Мягкое удаление подборки — только создатель, агент, менеджер, админ.
+    """
+    selection_obj = get_object_or_404(
+        Selection, pk=pk, agency=request.user.agency, is_deleted=False,
+    )
+
+    if request.user.is_agent and selection_obj.agent != request.user:
+        messages.error(request, 'Удалить подборку может только его создатель.')
+        return redirect('selections:list')
+
+    if request.method == 'POST':
+        selection_obj.soft_delete()
+        messages.success(request, f'Подборка «{selection_obj}» удалёна.')
+        return redirect('selections:list')
+
+    return render(request, 'selections/crm/delete_confirm.html', {
+        'selection': selection_obj,
+    })

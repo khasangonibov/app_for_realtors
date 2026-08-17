@@ -37,13 +37,13 @@ def dashboard(request):
     thirty_days_ago = now - timedelta(days=30)
 
     if request.user.is_agent:
-        properties_qs = Property.objects.filter(agency=agency, agent=request.user)
-        contacts_qs = Contact.objects.filter(agency=agency, agent=request.user)
-        deals_qs = Deal.objects.filter(agency=agency, agent=request.user)
-        tasks_qs = Task.objects.filter(agency=agency, agent=request.user)
+        properties_qs = Property.objects.filter(agency=agency, agent=request.user, is_deleted=False,)
+        contacts_qs = Contact.objects.filter(agency=agency, agent=request.user, is_deleted=False)
+        deals_qs = Deal.objects.filter(agency=agency, agent=request.user, is_deleted=False)
+        tasks_qs = Task.objects.filter(agency=agency, agent=request.user, is_deleted=False)
     else:
-        properties_qs = Property.objects.filter(agency=agency)
-        contacts_qs = Contact.objects.filter(agency=agency)
+        properties_qs = Property.objects.filter(agency=agency, is_deleted=False,)
+        contacts_qs = Contact.objects.filter(agency=agency, is_deleted=False)
         deals_qs = Deal.objects.filter(agency=agency)
         tasks_qs = Task.objects.filter(agency=agency, agent=request.user)
 
@@ -116,13 +116,13 @@ def dashboard(request):
     # Топ объектов по просмотрам
     top_viewed = properties_qs.annotate(
         views_count=Count('views')
-    ).filter(views_count__gt=0).order_by('-views_count')[:5]
+    ).filter(views_count__gt=0, is_deleted=False).order_by('-views_count')[:5]
 
     # ── Последние контакты ────────────────────────────────────────────────
     recent_contacts = contacts_qs.order_by('-created_at')[:5]
 
     # ── Последние объекты ─────────────────────────────────────────────────
-    recent_properties = properties_qs.order_by(
+    recent_properties = properties_qs.filter(is_deleted=False,).order_by(
         '-created_at'
     ).prefetch_related('photos')[:6]
 
@@ -286,6 +286,8 @@ def user_reset_password(request, pk):
 def client_register(request):
     """Регистрация внешнего пользователя (клиента)."""
     from .forms import ClientRegisterForm
+    from django.contrib.auth import login
+    from django.contrib.auth.backends import ModelBackend
     from apps.contacts.models import Contact
     from apps.accounts.models import Agency
 
@@ -317,7 +319,7 @@ def client_register(request):
                     }
                 )
 
-            login(request, user)
+            login(request, user, backend='django.contrib.auth.backends.ModelBackend')
             messages.success(
                 request,
                 f'Добро пожаловать, {user.first_name}! '
@@ -337,10 +339,11 @@ def client_profile(request):
     from apps.contacts.models import Contact
     from apps.chat.models import ChatRoom, Message
 
-    contacts = Contact.objects.filter(email=request.user.email)
+    contacts = Contact.objects.filter(email=request.user.email, is_deleted=False)
 
     selections = Selection.objects.filter(
-        contact__in=contacts
+        contact__in=contacts,
+        is_deleted=False,
     ).prefetch_related('items__property').order_by('-created_at')
 
     # Чаты клиента с подсчётом непрочитанных

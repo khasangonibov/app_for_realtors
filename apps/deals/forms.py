@@ -66,11 +66,11 @@ class DealForm(forms.ModelForm):
         # Показываем только объекты и контакты своего агентства
         if agency:
             self.fields['property'].queryset = \
-                self.fields['property'].queryset.filter(agency=agency)
+                self.fields['property'].queryset.filter(agency=agency, is_deleted=False,)
             self.fields['seller_contact'].queryset = \
-                self.fields['seller_contact'].queryset.filter(agency=agency)
+                self.fields['seller_contact'].queryset.filter(agency=agency, is_deleted=False,)
             self.fields['buyer_contact'].queryset = \
-                self.fields['buyer_contact'].queryset.filter(agency=agency)
+                self.fields['buyer_contact'].queryset.filter(agency=agency, is_deleted=False,)
                 
                 
 class DealFilterForm(forms.Form):

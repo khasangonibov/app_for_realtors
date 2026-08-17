@@ -213,6 +213,11 @@
                    class="btn btn-outline-secondary">
                     Отмена
                 </a>
+                {% if property %}
+                <a href="{% url 'properties:delete' property.pk %}" class="btn btn-outline-danger ms-auto">
+                    Удалить объект
+                </a>
+                {% endif %}
             </div>
 
         </form>

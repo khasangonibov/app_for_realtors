@@ -94,6 +94,11 @@
                 <a href="{% url 'deals:board' %}" class="btn btn-outline-secondary">
                     Отмена
                 </a>
+                {% if deal %}
+                <a href="{% url 'deals:delete' deal.pk %}" class="btn btn-outline-danger ms-auto">
+                    Удалить сделку
+                </a>
+                {% endif %}
             </div>
         </form>
     </div>

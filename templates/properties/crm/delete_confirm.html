@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% block title %}Удаление объекта{% endblock %}
+
+{% block content %}
+<div class="bg-light min-vh-100">
+    <div class="container py-4">
+        <h1 class="h4 mb-4">Удалить объект?</h1>
+
+        <div class="bg-white rounded border p-4 mb-4">
+            <div class="fw-semibold">
+                {{ property.get_property_type_display }}
+                {% if property.area_total %}{{ property.area_total }} м²{% endif %}
+            </div>
+            <div class="text-muted small">
+                {{ property.city }}{% if property.street %}, {{ property.street }}{% endif %}
+            </div>
+        </div>
+
+        <div class="alert alert-warning">
+            Объект будет скрыт из списков и публичного каталога.
+            Связанные сделки, задачи и история сохранятся в системе.
+        </div>
+
+        <form method="post">
+            {% csrf_token %}
+            <div class="d-flex gap-3">
+                <button type="submit" class="btn btn-danger">
+                    Удалить объект
+                </button>
+                <a href="{% url 'properties:edit' property.pk %}" class="btn btn-outline-secondary">
+                    Отмена
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

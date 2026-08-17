@@ -28,6 +28,7 @@ def property_detail(request, agency_slug, pk, token):
         pk=pk,
         public_token=token,
         agency__slug=agency_slug,
+        is_deleted=False,
     )
 
     # Если объект не опубликован — отдаём 404, а не "объект скрыт",
@@ -71,6 +72,7 @@ def catalog(request):
     queryset = Property.objects.filter(
         is_published=True,
         status='active',
+        is_deleted=False,
     ).select_related(
         'agency', 'agent'
     ).prefetch_related('photos').order_by('-created_at')

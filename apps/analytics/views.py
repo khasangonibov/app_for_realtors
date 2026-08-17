@@ -19,7 +19,7 @@ def analytics_dashboard(request):
 
     # ── Объекты по статусам ───────────────────────────────────────────────
     properties_by_status = list(
-        Property.objects.filter(agency=agency)
+        Property.objects.filter(agency=agency, is_deleted=False,)
         .values('status')
         .annotate(count=Count('id'))
         .order_by('status')
@@ -27,7 +27,7 @@ def analytics_dashboard(request):
 
     # ── Объекты по типам ──────────────────────────────────────────────────
     properties_by_type = list(
-        Property.objects.filter(agency=agency)
+        Property.objects.filter(agency=agency, is_deleted=False,)
         .values('property_type')
         .annotate(count=Count('id'))
         .order_by('-count')
@@ -35,7 +35,7 @@ def analytics_dashboard(request):
 
     # ── Воронка контактов ─────────────────────────────────────────────────
     contacts_funnel = list(
-        Contact.objects.filter(agency=agency)
+        Contact.objects.filter(agency=agency, is_deleted=False)
         .values('status')
         .annotate(count=Count('id'))
     )
@@ -76,7 +76,7 @@ def analytics_dashboard(request):
 
     # ── Топ объектов по просмотрам ────────────────────────────────────────
     top_properties = list(
-        Property.objects.filter(agency=agency)
+        Property.objects.filter(agency=agency, is_deleted=False,)
         .annotate(views_count=Count('views'))
         .order_by('-views_count')[:5]
     )

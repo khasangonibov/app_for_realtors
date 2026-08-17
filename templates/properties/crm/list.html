@@ -151,6 +151,9 @@
                                 Не опубликован
                             </span>
                             {% endif %}
+                            <a href="{% url 'properties:delete' property.pk %}" class="btn btn-outline-danger btn-sm">
+                                🗑️
+                            </a>
                         </div>
                     </div>
 

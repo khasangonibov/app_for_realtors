@@ -10,7 +10,7 @@ from .forms import DealForm, DealFilterForm
 
 def _base_queryset(user):
     """Базовая выборка сделок агентства — видно всем сотрудникам."""
-    return Deal.objects.filter(agency=user.agency)
+    return Deal.objects.filter(agency=user.agency, is_deleted=False)
 
 
 def _apply_filters(form, queryset):
@@ -168,3 +168,25 @@ def deal_export_excel(request):
         ])
 
     return finalize_excel(wb, ws, response, start_row=2, col_count=len(headers))
+
+
+@crm_required
+def deal_delete(request, pk):
+    """Мягкое удаление сделки — только назначенный агент, менеджер, админ.
+    """
+    deal_obj = get_object_or_404(
+        Deal, pk=pk, agency=request.user.agency, is_deleted=False,
+    )
+
+    if request.user.is_agent and deal_obj.agent != request.user:
+        messages.error(request, 'Удалить сделку может только назначенный риелтор.')
+        return redirect('deals:board')
+
+    if request.method == 'POST':
+        deal_obj.soft_delete()
+        messages.success(request, f'Сделка «{deal_obj}» удалёна.')
+        return redirect('deals:board')
+
+    return render(request, 'deals/delete_confirm.html', {
+        'deal': deal_obj,
+    })

@@ -45,9 +45,9 @@ class TaskForm(forms.ModelForm):
 
         if agency:
             self.fields['contact'].queryset = \
-                self.fields['contact'].queryset.filter(agency=agency)
+                self.fields['contact'].queryset.filter(agency=agency, is_deleted=False)
             self.fields['related_property'].queryset = \
-                self.fields['related_property'].queryset.filter(agency=agency)
+                self.fields['related_property'].queryset.filter(agency=agency, is_deleted=False,)
 
         # Поле выбора исполнителя — видно только менеджеру/админу
         if current_user and not current_user.is_agent:

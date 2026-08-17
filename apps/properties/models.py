@@ -3,11 +3,11 @@ import uuid
 from django.db import models
 from django.urls import reverse
 
-from apps.core.models import UUIDModel, TimeStampedModel
+from apps.core.models import UUIDModel, TimeStampedModel, SoftDeleteModel
 from apps.accounts.models import Agency, User
 
 
-class Property(UUIDModel, TimeStampedModel):
+class Property(UUIDModel, TimeStampedModel, SoftDeleteModel):
     """Объект недвижимости — главная модель приложения.
     """
 

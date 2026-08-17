@@ -1,12 +1,12 @@
 import uuid
 from django.db import models
-from apps.core.models import UUIDModel, TimeStampedModel
+from apps.core.models import UUIDModel, TimeStampedModel, SoftDeleteModel
 from apps.accounts.models import Agency, User
 from apps.contacts.models import Contact
 from apps.properties.models import Property
 
 
-class Selection(UUIDModel, TimeStampedModel):
+class Selection(UUIDModel, TimeStampedModel, SoftDeleteModel):
     """Подборка объектов для конкретного клиента.
     Риелтор создаёт подборку, добавляет объекты и отправляет
     клиенту публичную ссылку. Клиент видит объекты и может

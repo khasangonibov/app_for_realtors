@@ -1,5 +1,7 @@
 import uuid
 from django.db import models
+from django.utils import timezone
+
 
 
 class UUIDModel(models.Model):
@@ -29,3 +31,22 @@ class TimeStampedModel(models.Model):
 
     class Meta:
         abstract = True
+        
+        
+
+class SoftDeleteModel(models.Model):
+    """Абстрактная модель — добавляет мягкое удаление.
+    Запись никогда не стирается физически, только помечается.
+    Модели с этим миксином обязаны фильтровать is_deleted=False
+    во всех queryset'ах, где не должны показываться удалённые записи.
+    """
+    is_deleted = models.BooleanField('Удалено', default=False)
+    deleted_at = models.DateTimeField('Удалено в', null=True, blank=True)
+
+    class Meta:
+        abstract = True
+
+    def soft_delete(self):
+        self.is_deleted = True
+        self.deleted_at = timezone.now()
+        self.save(update_fields=['is_deleted', 'deleted_at'])

@@ -1,9 +1,9 @@
 from django.db import models
-from apps.core.models import UUIDModel, TimeStampedModel
+from apps.core.models import UUIDModel, TimeStampedModel, SoftDeleteModel
 from apps.accounts.models import Agency, User
 
 
-class Contact(UUIDModel, TimeStampedModel):
+class Contact(UUIDModel, TimeStampedModel, SoftDeleteModel):
     """Клиент или лид агентства.
     Контакт всегда привязан к агентству и ответственному риелтору.
     """

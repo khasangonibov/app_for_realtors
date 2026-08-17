@@ -1,11 +1,11 @@
 from django.db import models
-from apps.core.models import UUIDModel, TimeStampedModel
+from apps.core.models import UUIDModel, TimeStampedModel, SoftDeleteModel
 from apps.accounts.models import Agency, User
 from apps.contacts.models import Contact
 from apps.properties.models import Property
 
 
-class ManagementContract(UUIDModel, TimeStampedModel):
+class ManagementContract(UUIDModel, TimeStampedModel, SoftDeleteModel):
     """Договор доверительного управления объектом.
     Связывает объект, собственника (контакт) и управляющего агента.
     """

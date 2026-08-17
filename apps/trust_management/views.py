@@ -17,7 +17,8 @@ def _log_action(contract, user, action):
 def contract_list(request):
     """Список договоров доверительного управления."""
     queryset = ManagementContract.objects.filter(
-        agency=request.user.agency
+        agency=request.user.agency,
+        is_deleted=False,
     ).select_related('related_property', 'owner', 'agent')
 
     if request.user.is_agent:
@@ -62,7 +63,7 @@ def contract_create(request):
 
 @crm_required
 def contract_edit(request, pk):
-    queryset = ManagementContract.objects.filter(agency=request.user.agency)
+    queryset = ManagementContract.objects.filter(agency=request.user.agency, is_deleted=False,)
 
     if request.user.is_agent:
         queryset = queryset.filter(agent=request.user)
@@ -92,7 +93,7 @@ def contract_edit(request, pk):
 @crm_required
 def contract_detail(request, pk):
     """Карточка договора — финансы, документы, журнал."""
-    queryset = ManagementContract.objects.filter(agency=request.user.agency)
+    queryset = ManagementContract.objects.filter(agency=request.user.agency, is_deleted=False,)
 
     # Обычный риелтор видит только свои договоры управления
     if request.user.is_agent:
@@ -157,7 +158,7 @@ def contract_detail(request, pk):
 
 @crm_required
 def transaction_delete(request, pk, transaction_pk):
-    queryset = ManagementContract.objects.filter(agency=request.user.agency)
+    queryset = ManagementContract.objects.filter(agency=request.user.agency, is_deleted=False,)
     if request.user.is_agent:
         queryset = queryset.filter(agent=request.user)
     
@@ -178,7 +179,7 @@ def transaction_delete(request, pk, transaction_pk):
 
 @crm_required
 def document_delete(request, pk, document_pk):
-    queryset = ManagementContract.objects.filter(agency=request.user.agency)
+    queryset = ManagementContract.objects.filter(agency=request.user.agency, is_deleted=False,)
     if request.user.is_agent:
         queryset = queryset.filter(agent=request.user)
         
@@ -198,7 +199,7 @@ def document_delete(request, pk, document_pk):
 @crm_required
 def contract_report(request, pk):
     """Отчёт для клиента — доходы/расходы за период."""
-    queryset = ManagementContract.objects.filter(agency=request.user.agency)
+    queryset = ManagementContract.objects.filter(agency=request.user.agency, is_deleted=False,)
 
     if request.user.is_agent:
         queryset = queryset.filter(agent=request.user)

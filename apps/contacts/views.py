@@ -15,7 +15,8 @@ from apps.core.exports import (
 def contact_list(request):
     """Список контактов агентства с поиском и фильтрами."""
     queryset = Contact.objects.filter(
-        agency=request.user.agency
+        agency=request.user.agency,
+        is_deleted=False,
     ).select_related('agent')
 
 
@@ -132,7 +133,8 @@ def contact_edit(request, pk):
 def contact_export_excel(request):
     """Экспорт контактов в Excel."""
     queryset = Contact.objects.filter(
-        agency=request.user.agency
+        agency=request.user.agency,
+        is_deleted=False,
     ).select_related('agent')
 
     # Поиск
@@ -189,3 +191,55 @@ def contact_export_excel(request):
         ])
 
     return finalize_excel(wb, ws, response, start_row=2, col_count=len(headers))
+
+
+def _check_contacts_can_delete(contact: Contact):
+    """Проверяет можно ли удалить контакт — есть ли активные связи.
+    Возвращает (True, '') если можно, (False, причина) если нельзя.
+    """
+    from apps.deals.models import Deal
+
+    # Активные сделки по этому контакту 
+    active_deal = Deal.objects.filter(
+        Q(seller_contact=contact) | Q(buyer_contact=contact)
+    ).exclude(
+        stage__in=['closed', 'cancelled']
+    ).exists()
+    if active_deal:
+        return False, 'У контакта есть активная сделка. Закройте или отмените её перед удалением.'
+
+    # Активный договор доверительного управления
+    if hasattr(contact, 'management_contract'):
+        contract = contact.management_contract
+        if contract.status == 'active':
+            return False, 'У контакта есть действующий договор доверительного управления. Расторгните его перед удалением.'
+
+    return True, ''
+
+
+@crm_required
+def contact_delete(request, pk):
+    """Мягкое удаление объекта — только назначенный агент, менеджер, админ.
+    Запрещено при активной сделке или договоре управления.
+    """
+    contact = get_object_or_404(
+        Contact, pk=pk, agency=request.user.agency, is_deleted=False,
+    )
+
+    if request.user.is_agent and contact.agent != request.user:
+        messages.error(request, 'Удалить контакт может только назначенный риелтор.')
+        return redirect('contacts:list')
+
+    can_delete, reason = _check_contacts_can_delete(contact)
+    if not can_delete:
+        messages.error(request, f'Нельзя удалить контакт: {reason}')
+        return redirect('contacts:edit', pk=pk)
+
+    if request.method == 'POST':
+        contact.soft_delete()
+        messages.success(request, f'Контакт «{contact}» удалён.')
+        return redirect('contacts:list')
+
+    return render(request, 'contacts/delete_confirm.html', {
+        'contact': contact,
+    })

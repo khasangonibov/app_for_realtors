@@ -12,6 +12,7 @@ from .forms import TaskCompletionForm, TaskForm
 def task_list(request):
     queryset = Task.objects.filter(
         agency=request.user.agency,
+        is_deleted=False,
     ).select_related('contact', 'related_property', 'agent', 'assigned_by')
 
     if request.user.is_agent:
@@ -30,6 +31,7 @@ def task_list(request):
         agency=request.user.agency,
         is_done=True,
         is_approved=False,
+        is_deleted=False,
     ).exclude(assigned_by=None).exclude(assigned_by=models.F('agent'))
 
     if request.user.is_agent:
@@ -84,7 +86,7 @@ def task_edit(request, pk):
     Но если задачу назначил кто-то другой (не сам себе) —
     риелтор может только смотреть детали, не редактировать поля.
     """
-    queryset = Task.objects.filter(agency=request.user.agency)
+    queryset = Task.objects.filter(agency=request.user.agency, is_deleted=False,)
     if request.user.is_agent:
         queryset = queryset.filter(agent=request.user)
     task = get_object_or_404(queryset, pk=pk)
@@ -132,7 +134,7 @@ def task_done(request, pk):
     """Исполнитель отмечает задачу как сделанную с комментарием.
     Если задачу назначил кто-то другой — уходит на подтверждение.
     """
-    queryset = Task.objects.filter(agency=request.user.agency)
+    queryset = Task.objects.filter(agency=request.user.agency, is_deleted=False,)
     if request.user.is_agent:
         queryset = queryset.filter(agent=request.user)
     task = get_object_or_404(queryset, pk=pk)

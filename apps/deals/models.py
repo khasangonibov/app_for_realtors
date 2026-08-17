@@ -1,11 +1,11 @@
 from django.db import models
-from apps.core.models import UUIDModel, TimeStampedModel
+from apps.core.models import UUIDModel, TimeStampedModel, SoftDeleteModel
 from apps.accounts.models import Agency, User
 from apps.properties.models import Property
 from apps.contacts.models import Contact
 
 
-class Deal(UUIDModel, TimeStampedModel):
+class Deal(UUIDModel, TimeStampedModel, SoftDeleteModel):
     """Сделка — связывает объект, продавца, покупателя и риелторов.
     Проходит через стадии от переговоров до закрытия.
     """

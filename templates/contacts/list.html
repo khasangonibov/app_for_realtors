@@ -19,10 +19,6 @@
                     <i class="bi bi-file-earmark-excel"></i>
                     📥 Экспорт в Excel
                 </a>
-                {% comment %} <a href="{% url 'contacts:export' %}{% if request.GET %}?{{ request.GET.urlencode }}{% endif %}"
-                class="btn btn-outline-success btn-sm">
-                    📥 Экспорт в Excel
-                </a> {% endcomment %}
                 <a href="{% url 'contacts:create' %}" class="btn btn-primary">
                     + Добавить контакт
                 </a>
