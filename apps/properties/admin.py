@@ -1,5 +1,5 @@
 from django.contrib import admin
-
+from apps.core.admin import SoftDeleteAdminMixin
 from .models import Property, PropertyPhoto, PropertyDocument, PropertyFeature, PropertyView
 
 
@@ -28,7 +28,7 @@ class PropertyDocumentInline(admin.TabularInline):
 
 
 @admin.register(Property)
-class PropertyAdmin(admin.ModelAdmin):
+class PropertyAdmin(SoftDeleteAdminMixin, admin.ModelAdmin):
     list_display = (
         'title', 'agency', 'agent', 'deal_type',
         'property_type', 'price', 'city', 'status',

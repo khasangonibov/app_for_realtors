@@ -1,9 +1,10 @@
 from django.contrib import admin
+from apps.core.admin import SoftDeleteAdminMixin
 from .models import Deal
 
 
 @admin.register(Deal)
-class DealAdmin(admin.ModelAdmin):
+class DealAdmin(SoftDeleteAdminMixin, admin.ModelAdmin):
     list_display = (
         'property', 'stage', 'agent',
         'price_agreed', 'close_date', 'created_at',

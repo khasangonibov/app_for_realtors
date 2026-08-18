@@ -1,4 +1,5 @@
 from django.contrib import admin
+from apps.core.admin import SoftDeleteAdminMixin
 from .models import (
     ManagementContract, Transaction, ManagementDocument,
     ActivityLog, RosreestrVerification,
@@ -29,7 +30,7 @@ class ActivityLogInline(admin.TabularInline):
 
 
 @admin.register(ManagementContract)
-class ManagementContractAdmin(admin.ModelAdmin):
+class ManagementContractAdmin(SoftDeleteAdminMixin, admin.ModelAdmin):
     list_display = (
         'related_property', 'owner', 'agent',
         'status', 'start_date', 'end_date',

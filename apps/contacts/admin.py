@@ -1,4 +1,5 @@
 from django.contrib import admin
+from apps.core.admin import SoftDeleteAdminMixin
 from .models import Contact, ContactActivity
 
 
@@ -11,7 +12,7 @@ class ContactActivityInline(admin.TabularInline):
 
 
 @admin.register(Contact)
-class ContactAdmin(admin.ModelAdmin):
+class ContactAdmin(SoftDeleteAdminMixin, admin.ModelAdmin):
     list_display = (
         'full_name', 'phone', 'contact_type',
         'status', 'source', 'agent', 'created_at',
