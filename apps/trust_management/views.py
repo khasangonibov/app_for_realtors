@@ -90,6 +90,7 @@ def contract_edit(request, pk):
     })
 
 
+
 @crm_required
 def contract_detail(request, pk):
     """Карточка договора — финансы, документы, журнал."""
@@ -194,6 +195,30 @@ def document_delete(request, pk, document_pk):
         document.delete()
         messages.success(request, 'Документ удалён.')
     return redirect('trust_management:detail', pk=pk)
+
+
+@crm_required
+def contract_delete(request, pk):
+    """Мягкое удаление объекта — только назначенный агент, менеджер, админ.
+    Запрещено при активной сделке или договоре управления.
+    """
+    contract_obj = get_object_or_404(
+        ManagementContract, pk=pk, agency=request.user.agency, is_deleted=False,
+    )
+
+    if request.user.is_agent and contract_obj.agent != request.user:
+        messages.error(request, 'Удалить объект может только назначенный риелтор.')
+        return redirect('trust_management:detail')
+
+
+    if request.method == 'POST':
+        contract_obj.soft_delete()
+        messages.success(request, f'Договор «{contract_obj}» удалён.')
+        return redirect('trust_management:list')
+
+    return render(request, 'trust_management/delete_confirm.html', {
+        'contract': contract_obj,
+    })
 
 
 @crm_required

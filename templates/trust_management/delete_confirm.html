@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+
+{% block title %}Удаление договора управления{% endblock %}
+
+{% block content %}
+<div class="bg-light min-vh-100">
+    <div class="container py-4">
+        <h1 class="h4 mb-4">Удалить договор?</h1>
+
+        <div class="bg-white rounded border p-4 mb-4">
+            <div class="fw-semibold">
+                <strong>Объект:</strong> {{ contract.related_property }}<br>
+                <strong>Собственник:</strong> {{ contract.owner }}<br>
+                <strong>Управляющий агент:</strong> {{ contract.agent }}<br>
+                <strong>Номер договора:</strong> {{ contract.contract_number }}<br>
+            </div>
+        </div>
+
+        <div class="alert alert-warning">
+            Договор будет скрыт из списков.<br>
+            Связанные объекты, контакты и история сохранятся в системе.
+        </div>
+
+        <form method="post">
+            {% csrf_token %}
+            <div class="d-flex gap-3">
+                <button type="submit" class="btn btn-danger">
+                    Удалить договор
+                </button>
+                <a href="{% url 'trust_management:detail' contract.pk %}" class="btn btn-outline-secondary">
+                    Отмена
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

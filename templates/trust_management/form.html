@@ -88,7 +88,10 @@
 
             <div class="d-flex gap-3">
                 <button type="submit" class="btn btn-primary px-4">{{ submit_label }}</button>
-                <a href="{% url 'trust_management:list' %}" class="btn btn-outline-secondary">Отмена</a>
+                <a href="{% url 'trust_management:detail' contract.pk %}" class="btn btn-outline-secondary">Отмена</a>
+                <a href="{% url 'trust_management:delete' contract.pk %}" class="btn btn-outline-danger ms-auto">
+                    Удалить договор
+                </a>
             </div>
         </form>
     </div>
