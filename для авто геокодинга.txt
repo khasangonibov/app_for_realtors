@@ -1,0 +1,97 @@
+import time
+import requests
+
+from apps.properties.models import Property
+
+
+qs = Property.objects.filter(
+    latitude__isnull=True
+).exclude(
+    city=''
+)
+
+total = qs.count()
+
+print(f'Найдено объектов для геокодирования: {total}')
+
+session = requests.Session()
+session.headers.update({
+    'User-Agent': 'RealEstateCRM/1.0'
+})
+
+success = 0
+failed = 0
+
+for i, property in enumerate(qs, 1):
+
+    parts = [
+        property.building,
+        property.street,
+        property.district,
+        property.city,
+        'Россия',
+    ]
+
+    address = ', '.join(
+        str(part).strip()
+        for part in parts
+        if part
+    )
+
+    print(f'\n[{i}/{total}] {property.title}')
+    print(f'Адрес: {address}')
+
+    try:
+        response = session.get(
+            'https://nominatim.openstreetmap.org/search',
+            params={
+                'q': address,
+                'format': 'json',
+                'limit': 1,
+                'countrycodes': 'ru',
+            },
+            timeout=15,
+        )
+
+        response.raise_for_status()
+        data = response.json()
+
+        if data:
+            latitude = float(data[0]['lat'])
+            longitude = float(data[0]['lon'])
+
+            property.latitude = latitude
+            property.longitude = longitude
+
+            property.save(
+                update_fields=[
+                    'latitude',
+                    'longitude',
+                ]
+            )
+
+            success += 1
+
+            print(
+                f'✓ Найдено: '
+                f'{latitude:.7f}, {longitude:.7f}'
+            )
+
+        else:
+            failed += 1
+            print('✗ Адрес не найден')
+
+    except Exception as e:
+        failed += 1
+        print(f'✗ Ошибка: {e}')
+
+    if i < total:
+        time.sleep(1.1)
+
+
+print('\n' + '=' * 50)
+print('ГЕОКОДИРОВАНИЕ ЗАВЕРШЕНО')
+print('=' * 50)
+print(f'Успешно:       {success}')
+print(f'Не найдено:    {failed}')
+print(f'Всего:         {total}')

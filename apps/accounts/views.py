@@ -146,14 +146,16 @@ def _check_manager_access(user):
 @crm_required
 @manager_required
 def users_list(request):
+    """Список сотрудников агентства — без клиентов, только штат."""
     users = User.objects.filter(
-        agency=request.user.agency
+        agency=request.user.agency,
+    ).exclude(
+        profile__role=UserProfile.Role.CLIENT,
     ).select_related('profile').order_by('last_name', 'first_name')
 
     return render(request, 'accounts/users_list.html', {
         'users': users,
     })
-
 
 @crm_required
 @manager_required

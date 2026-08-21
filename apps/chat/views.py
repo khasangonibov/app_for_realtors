@@ -96,116 +96,107 @@ def client_chat(request, room_pk=None, agent_pk=None):
     if room_pk:
         # Открываем существующую комнату
         room = get_object_or_404(
-            ChatRoom, pk=room_pk, client=request.user
+            ChatRoom,
+            pk=room_pk,
+            client=request.user,
         )
     else:
         # Создаём или открываем чат с выбранным агентом
         agent = None
+
         if agent_pk:
             agent = get_object_or_404(
-                User, pk=agent_pk, agency=agency
+                User,
+                pk=agent_pk,
+                agency=agency,
             )
-        room = get_or_create_room(request.user, agency, agent=agent)
 
+        room = get_or_create_room(
+            request.user,
+            agency,
+            agent=agent,
+        )
+
+    # POST — отправка сообщения через HTMX
     if request.method == 'POST':
         text = request.POST.get('text', '').strip()
         reply_to_id = request.POST.get('reply_to')
+
         if text:
             reply_to = None
+
             if reply_to_id:
-                reply_to = Message.objects.filter(pk=reply_to_id, room=room).first()
+                reply_to = Message.objects.filter(
+                    pk=reply_to_id,
+                    room=room,
+                ).first()
+
             Message.objects.create(
                 room=room,
                 sender=request.user,
                 text=text,
                 reply_to=reply_to,
             )
-        
+
+        # Возвращаем только сообщения,
+        # потому что HTMX вставляет ответ в #messagesContainer.
+        messages_qs = room.messages.select_related(
+            'sender',
+            'reply_to',
+        ).order_by('created_at')
+
+        return render(request, 'chat/_messages.html', {
+            'room': room,
+            'chat_messages': messages_qs,
+            'request': request,
+        })
+
+    # GET — обычная загрузка страницы чата.
     room.messages.filter(
         is_read=False,
-    ).exclude(sender=request.user).update(is_read=True)
+    ).exclude(
+        sender=request.user,
+    ).update(is_read=True)
 
-    messages_qs = room.messages.select_related('sender').order_by('created_at')
+    messages_qs = room.messages.select_related(
+        'sender',
+        'reply_to',
+    ).order_by('created_at')
 
     return render(request, 'chat/client_room.html', {
         'room': room,
         'chat_messages': messages_qs,
     })
+    
 
 @never_cache
 @login_required
 def client_chat_poll(request, room_pk):
     """HTMX polling для клиента."""
-    room = get_object_or_404(ChatRoom, pk=room_pk, client=request.user)
+
+    room = get_object_or_404(
+        ChatRoom,
+        pk=room_pk,
+        client=request.user,
+    )
 
     room.messages.filter(
         is_read=False,
-    ).exclude(sender=request.user).update(is_read=True)
+    ).exclude(
+        sender=request.user,
+    ).update(is_read=True)
 
-    messages_qs = room.messages.select_related('sender').order_by('created_at')
+    messages_qs = room.messages.select_related(
+        'sender',
+        'reply_to',
+    ).order_by('created_at')
 
     return render(request, 'chat/_messages.html', {
         'room': room,
-        'chat_messages': messages_qs
+        'chat_messages': messages_qs,
+        'request': request,
     })
-
-
-# @crm_required
-# def agent_chat_list(request):
-#     """Список чатов для сотрудника CRM."""
-#     from apps.accounts.models import UserProfile
-
-#     if request.user.is_agent:
-#         # Риелтор видит:
-#         # 1. Чаты где он назначен агентом
-#         # 2. Общие чаты (agent=None) — может подхватить
-#         personal_rooms = ChatRoom.objects.filter(
-#             agency=request.user.agency,
-#             agent=request.user,
-#         )
-#         general_rooms = ChatRoom.objects.filter(
-#             agency=request.user.agency,
-#             agent=None,
-#         )
-#         rooms = (personal_rooms | general_rooms).distinct()
-#     else:
-#         # Менеджер и admin видят все чаты агентства
-#         rooms = ChatRoom.objects.filter(
-#             agency=request.user.agency,
-#         )
-
-#     rooms = rooms.select_related(
-#         'client', 'agent'
-#     ).prefetch_related('messages').order_by('-created_at')
-
-#     rooms_with_unread = []
-#     for room in rooms:
-#         unread = room.messages.filter(
-#             is_read=False,
-#         ).exclude(sender=request.user).count()
-#         last_message = room.messages.order_by('-created_at').first()
-#         rooms_with_unread.append({
-#             'room': room,
-#             'unread': unread,
-#             'last_message': last_message,
-#             'is_general': room.agent is None,
-#         })
-
-#     # Сортируем — сначала непрочитанные
-#     rooms_with_unread.sort(key=lambda x: (
-#         -x['unread'],
-#         -(x['last_message'].created_at.timestamp()
-#           if x['last_message'] else 0)
-#     ))
-
-#     # Общее количество непрочитанных для бейджа
-#     total_unread = sum(r['unread'] for r in rooms_with_unread)
-
-#     return render(request, 'chat/agent_list.html', {
-#         'rooms': rooms_with_unread,
-#         'total_unread': total_unread,
-#     })
-
+    
 
 @crm_required
 def chat_list(request):
@@ -290,38 +281,68 @@ def chat_list(request):
 def agent_chat_room(request, pk):
     """Страница чата для риелтора в CRM."""
     room = get_object_or_404(
-        ChatRoom, pk=pk, agency=request.user.agency
+        ChatRoom,
+        pk=pk,
+        agency=request.user.agency,
     )
 
     if request.method == 'POST':
         text = request.POST.get('text', '').strip()
         reply_to_id = request.POST.get('reply_to')
+
         if text:
             reply_to = None
+
             if reply_to_id:
-                reply_to = Message.objects.filter(pk=reply_to_id, room=room).first()
+                reply_to = Message.objects.filter(
+                    pk=reply_to_id,
+                    room=room,
+                ).first()
+
             Message.objects.create(
                 room=room,
                 sender=request.user,
                 text=text,
                 reply_to=reply_to,
             )
+
+            # Если это был общий чат — назначаем текущего
+            # риелтора ответственным за чат.
             if not room.agent:
                 room.agent = request.user
-                room.save()
+                room.save(update_fields=['agent'])
 
-    # Отмечаем сообщения клиента как прочитанные
+        # После POST возвращаем только список сообщений,
+        # потому что HTMX вставляет ответ внутрь #messagesContainer.
+        messages_qs = room.messages.select_related(
+            'sender',
+            'reply_to',
+        ).order_by('created_at')
+
+        return render(request, 'chat/_messages.html', {
+            'room': room,
+            'chat_messages': messages_qs,
+            'request': request,
+        })
+
+    # GET — обычная загрузка страницы чата.
     room.messages.filter(
         is_read=False,
-    ).exclude(sender=request.user).update(is_read=True)
+    ).exclude(
+        sender=request.user,
+    ).update(is_read=True)
 
-    messages_qs = room.messages.select_related('sender').order_by('created_at')
+    messages_qs = room.messages.select_related(
+        'sender',
+        'reply_to',
+    ).order_by('created_at')
 
     return render(request, 'chat/agent_room.html', {
         'room': room,
         'chat_messages': messages_qs,
     })
-
+    
+    
 @never_cache
 @crm_required
 def agent_chat_poll(request, pk):

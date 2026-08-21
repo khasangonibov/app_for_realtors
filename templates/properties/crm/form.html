@@ -226,6 +226,77 @@
 {% endblock %}
 
 {% block extra_js %}
+
+<script>
+    // ── Динамическая этажность ──────────────────────────────────────────────
+
+    function updateFloorFields() {
+        const propertyType = document.querySelector('[name="property_type"]');
+
+        if (!propertyType) return;
+
+        const floor = document.querySelector('[name="floor"]');
+        const floorsTotal = document.querySelector('[name="floors_total"]');
+        const floorsCount = document.querySelector('[name="floors_count"]');
+
+        if (!floor || !floorsTotal || !floorsCount) return;
+
+        const floorContainer = floor.closest('.col-md-3');
+        const floorsTotalContainer = floorsTotal.closest('.col-md-3');
+        const floorsCountContainer = floorsCount.closest('.col-md-3');
+
+        const floorTypes = [
+            'apartment',
+            'room',
+            'commercial'
+        ];
+
+        const floorsCountTypes = [
+            'house',
+            'townhouse',
+            'garage'
+        ];
+
+        if (floorTypes.includes(propertyType.value)) {
+
+            floorContainer.style.display = '';
+            floorsTotalContainer.style.display = '';
+            floorsCountContainer.style.display = 'none';
+
+            floorsCount.value = '';
+
+        } else if (floorsCountTypes.includes(propertyType.value)) {
+
+            floorContainer.style.display = 'none';
+            floorsTotalContainer.style.display = 'none';
+            floorsCountContainer.style.display = '';
+
+            floor.value = '';
+            floorsTotal.value = '';
+
+        } else {
+
+            floorContainer.style.display = 'none';
+            floorsTotalContainer.style.display = 'none';
+            floorsCountContainer.style.display = 'none';
+
+            floor.value = '';
+            floorsTotal.value = '';
+            floorsCount.value = '';
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        const propertyType = document.querySelector('[name="property_type"]');
+
+        if (!propertyType) return;
+
+        updateFloorFields();
+
+        propertyType.addEventListener('change', updateFloorFields);
+    });
+</script>
+
 {% if property %}
 <script>
     // ── Геокодинг по адресу ────────────────────────────────────────────────────

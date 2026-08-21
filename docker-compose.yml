@@ -1,8 +1,4 @@
-version: '3.9'
-
 services:
-
-  # ── PostgreSQL ───────────────────────────────────────────────────────────────
   db:
     image: postgres:16-alpine
     restart: unless-stopped
@@ -13,14 +9,22 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
-      - "5432:5432"         # доступен на localhost для отладки
+      - "5432:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U crm_user -d realestate_crm"]
       interval: 10s
       timeout: 5s
       retries: 5
+    # Добавление команд для локализаций
+    command: 
+      - postgres
+      - -c
+      - shared_preload_libraries=pg_stat_statements
+      - -c
+      - pg_stat_statements.max=10000
+      - -c
+      - pg_stat_statements.track=all
 
-  # ── Redis ─────────────────────────────────────────────────────────────────────
   redis:
     image: redis:7-alpine
     restart: unless-stopped
@@ -32,7 +36,6 @@ services:
       timeout: 5s
       retries: 5
 
-  # ── MinIO (S3-совместимое хранилище) ─────────────────────────────────────────
   minio:
     image: minio/minio:latest
     restart: unless-stopped
@@ -43,10 +46,9 @@ services:
     volumes:
       - minio_data:/data
     ports:
-      - "9000:9000"    # S3 API
-      - "9001:9001"    # Web UI: http://localhost:9001
+      - "9000:9000"
+      - "9001:9001"
 
-  # ── Django приложение ─────────────────────────────────────────────────────────
   web:
     build:
       context: .
@@ -72,7 +74,6 @@ services:
       redis:
         condition: service_healthy
 
-  # ── Celery воркер ─────────────────────────────────────────────────────────────
   celery:
     build:
       context: .
@@ -90,7 +91,6 @@ services:
       - db
       - redis
 
-  # ── Celery Beat (периодические задачи) ────────────────────────────────────────
   beat:
     build:
       context: .

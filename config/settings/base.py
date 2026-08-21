@@ -124,9 +124,20 @@ TEMPLATES = [
 
 # ─── База данных ──────────────────────────────────────────────────────────────
 # dj-database-url парсит строку вида postgres://user:pass@host:port/dbname
+# DATABASES = {
+#     'default': env.db('DATABASE_URL', default='sqlite:///db.sqlite3')
+# }
 DATABASES = {
-    'default': env.db('DATABASE_URL', default='sqlite:///db.sqlite3')
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'realestate_crm',
+        'USER': 'crm_user',
+        'PASSWORD': 'crm_password',
+        'HOST': 'appforrealtors-db-1',  
+        'PORT': '5432',
+    }
 }
+
 # Все FK и ManyToMany используют транзакции — нужен ATOMIC_REQUESTS
 DATABASES['default']['ATOMIC_REQUESTS'] = True
 

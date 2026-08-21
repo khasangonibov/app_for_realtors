@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+{% load humanize %}
+
+{% block title %}{{ selection.title }}{% endblock %}
+
+{% block content %}
+<div class="bg-light min-vh-100">
+    <div class="container-fluid px-4 py-4">
+
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h1 class="h3 mb-1">{{ selection.title }}</h1>
+                {% if selection.contact %}
+                <p class="text-muted mb-0">Клиент: {{ selection.contact.full_name }}</p>
+                {% else %}
+                <p class="text-muted mb-0">Без привязки к клиенту</p>
+                {% endif %}
+            </div>
+            <div class="d-flex gap-2 align-items-center" >
+                <a href="{% url 'selections:list' %}" class="btn btn-outline-secondary btn-sm">
+                    ← Все подборки
+                </a>
+                <button class="btn btn-outline-primary btn-sm"
+                        onclick="copyLink('{{ request.scheme }}://{{ request.get_host }}{{ selection.get_public_url }}')">
+                    🔗 Ссылка для клиента
+                </button>
+                {% if selection.contact and selection.contact.email %}
+                <form method="post" action="{% url 'selections:send_email' selection.pk %}" class="d-inline">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-outline-primary btn-sm">
+                        📧 Отправить на почту
+                    </button>
+                </form>
+                {% endif %}
+                {% if can_edit %}
+                <a href="{% url 'selections:detail' selection.pk %}" class="btn btn-primary btn-sm">
+                    ✏️ Изменить
+                </a>
+                {% endif %}
+            </div>
+        </div>
+
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        {% endfor %}
+
+        {% if items %}
+        <div class="row g-3">
+            {% for item in items %}
+            <div class="col-md-6 col-xl-4">
+                <div class="card border-0 shadow-sm h-100">
+
+                    <a href="{% url 'properties:edit' item.property.pk %}"
+                       class="text-decoration-none text-dark" target="_blank">
+                        <div class="position-relative">
+                            {% with photo=item.property.cover_photo %}
+                            {% if photo %}
+                            <img src="{{ photo.image.url }}" class="card-img-top"
+                                 style="height: 180px; object-fit: cover;" alt="">
+                            {% else %}
+                            <div class="bg-secondary-subtle d-flex align-items-center justify-content-center"
+                                 style="height: 180px;">
+                                <span class="text-muted small">Нет фото</span>
+                            </div>
+                            {% endif %}
+                            {% endwith %}
+
+                            {# Реакция клиента — бейдж поверх фото #}
+                            <span class="position-absolute top-0 end-0 m-2 badge
+                                {% if item.client_status == 'liked' %}bg-success
+                                {% elif item.client_status == 'maybe' %}bg-warning text-dark
+                                {% elif item.client_status == 'rejected' %}bg-danger
+                                {% else %}bg-secondary{% endif %}">
+                                {% if item.client_status == 'liked' %}👍 Нравится
+                                {% elif item.client_status == 'maybe' %}🤔 Возможно
+                                {% elif item.client_status == 'rejected' %}👎 Не нравится
+                                {% else %}⏳ Нет реакции{% endif %}
+                            </span>
+                        </div>
+
+                        <div class="card-body pb-2">
+                            <div class="small fw-semibold">
+                                {{ item.property.get_property_type_display }}
+                                {% if item.property.area_total %}{{ item.property.area_total }} м²{% endif %}
+                            </div>
+                            <div class="text-muted small">{{ item.property.city }}
+                                {% if item.property.street %}, {{ item.property.street }}{% endif %}
+                            </div>
+                            <div class="fw-bold text-primary">{{ item.property.price|intcomma }} ₽</div>
+                        </div>
+                    </a>
+
+                    {% if item.agent_comment %}
+                    <div class="px-3 pb-2">
+                        <div class="text-muted small">💬 {{ item.agent_comment }}</div>
+                    </div>
+                    {% endif %}
+
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="bg-white rounded border text-center py-5 text-muted">
+            В подборке пока нет объектов.
+            {% if can_edit %}
+            <br>
+            <a href="{% url 'selections:edit' selection.pk %}" class="btn btn-primary btn-sm mt-3">
+                Добавить объекты
+            </a>
+            {% endif %}
+        </div>
+        {% endif %}
+
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function copyLink(url) {
+        navigator.clipboard.writeText(url).then(() => {
+            const toast = document.createElement('div');
+            toast.className = 'position-fixed bottom-0 end-0 m-3 alert alert-success shadow';
+            toast.style.zIndex = '9999';
+            toast.textContent = 'Ссылка скопирована!';
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 2000);
+        });
+    }
+</script>
+{% endblock %}

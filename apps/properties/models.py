@@ -18,6 +18,7 @@ class Property(UUIDModel, TimeStampedModel, SoftDeleteModel):
     class PropertyType(models.TextChoices):
         APARTMENT = 'apartment', 'Квартира'
         HOUSE = 'house', 'Дом'
+        TOWNHOUSE = 'townhouse', 'Таунхаус'
         COMMERCIAL = 'commercial', 'Коммерческая недвижимость'
         LAND = 'land', 'Земельный участок'
         GARAGE = 'garage', 'Гараж'
@@ -82,6 +83,11 @@ class Property(UUIDModel, TimeStampedModel, SoftDeleteModel):
     floor = models.PositiveSmallIntegerField('Этаж', null=True, blank=True)
     floors_total = models.PositiveSmallIntegerField(
         'Этажей в доме', null=True, blank=True,
+    )
+    floors_count = models.PositiveSmallIntegerField(
+        'Количество этажей',
+        null=True,
+        blank=True,
     )
     rooms_count = models.PositiveSmallIntegerField(
         'Количество комнат', null=True, blank=True,
@@ -162,6 +168,26 @@ class Property(UUIDModel, TimeStampedModel, SoftDeleteModel):
             'pk': self.pk,
             'token': self.public_token,
         })
+        
+        
+    @property
+    def has_floor(self):
+        """Может ли объект иметь отдельный этаж."""
+        return self.property_type in {
+            self.PropertyType.APARTMENT,
+            self.PropertyType.ROOM,
+            self.PropertyType.COMMERCIAL,
+        }
+
+
+    @property
+    def has_floors_count(self):
+        """Нужно ли показывать количество этажей самого объекта."""
+        return self.property_type in {
+            self.PropertyType.HOUSE,
+            self.PropertyType.TOWNHOUSE,
+            self.PropertyType.GARAGE,
+        }
 
 class PropertyPhoto(UUIDModel):
     """Фотографии объекта. Одна модель, поле is_cover отмечает

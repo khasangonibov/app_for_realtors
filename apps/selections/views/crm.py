@@ -225,3 +225,28 @@ def selection_delete(request, pk):
     return render(request, 'selections/crm/delete_confirm.html', {
         'selection': selection_obj,
     })
+    
+    
+
+@crm_required
+def selection_view(request, pk):
+    """Просмотр подборки — объекты с реакциями клиента.
+    Доступен всем сотрудникам агентства (просмотр не ограничен),
+    редактирование — через кнопку «Изменить», ведущую на selection_detail.
+    """
+    selection = get_object_or_404(
+        Selection, pk=pk, agency=request.user.agency
+    )
+
+    can_edit = (
+        not request.user.is_agent
+        or selection.agent == request.user
+    )
+
+    items = selection.items.select_related('property').prefetch_related('property__photos')
+
+    return render(request, 'selections/crm/view.html', {
+        'selection': selection,
+        'items': items,
+        'can_edit': can_edit,
+    })

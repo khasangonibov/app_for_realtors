@@ -63,7 +63,7 @@ class PropertyForm(forms.ModelForm):
             'commission_percent', 'commission_fixed',
             # Площади
             'area_total', 'area_living', 'area_kitchen',
-            'rooms_count', 'floor', 'floors_total',
+            'rooms_count', 'floor', 'floors_total', 'floors_count',
             # Адрес
             'city', 'district', 'street', 'building', 'apartment',
             # Координаты
@@ -89,6 +89,7 @@ class PropertyForm(forms.ModelForm):
             'rooms_count': forms.NumberInput(attrs={'class': 'form-control'}),
             'floor': forms.NumberInput(attrs={'class': 'form-control'}),
             'floors_total': forms.NumberInput(attrs={'class': 'form-control'}),
+            'floors_count': forms.NumberInput(attrs={'class': 'form-control'}),
             'city': forms.TextInput(attrs={'class': 'form-control'}),
             'district': forms.TextInput(attrs={'class': 'form-control'}),
             'street': forms.TextInput(attrs={'class': 'form-control'}),
@@ -115,6 +116,7 @@ class PropertyForm(forms.ModelForm):
             'rooms_count': 'Количество комнат',
             'floor': 'Этаж',
             'floors_total': 'Этажей в доме',
+            'floors_count': 'Количество этажей',
             'city': 'Город',
             'district': 'Район',
             'street': 'Улица',
@@ -150,6 +152,7 @@ class PropertyForm(forms.ModelForm):
             ('rooms_count', 'col-md-3'),
             ('floor', 'col-md-3'),
             ('floors_total', 'col-md-3'),
+            ('floors_count', 'col-md-3'),
         ]),
         ('address', 'Адрес', [
             ('city', 'col-md-4'),
