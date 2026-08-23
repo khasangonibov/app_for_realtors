@@ -1,22 +1,20 @@
 services:
+
   db:
     image: postgres:16-alpine
     restart: unless-stopped
     environment:
-      POSTGRES_DB: realestate_crm
-      POSTGRES_USER: crm_user
-      POSTGRES_PASSWORD: crm_password
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U crm_user -d realestate_crm"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 10s
       timeout: 5s
       retries: 5
-    # Добавление команд для локализаций
-    command: 
+    command:
       - postgres
       - -c
       - shared_preload_libraries=pg_stat_statements
@@ -28,8 +26,6 @@ services:
   redis:
     image: redis:7-alpine
     restart: unless-stopped
-    ports:
-      - "6379:6379"
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
@@ -41,13 +37,11 @@ services:
     restart: unless-stopped
     command: server /data --console-address ":9001"
     environment:
-      MINIO_ROOT_USER: minioadmin
-      MINIO_ROOT_PASSWORD: minioadmin
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
     volumes:
       - minio_data:/data
-    ports:
-      - "9000:9000"
-      - "9001:9001"
+
 
   web:
     build:
@@ -57,17 +51,14 @@ services:
     command: >
       sh -c "python manage.py migrate &&
              python manage.py collectstatic --no-input &&
-             gunicorn config.wsgi:application --bind 0.0.0.0:8000 --workers 3"
+             gunicorn config.wsgi:application --bind 0.0.0.0:8000 --workers 2"
     volumes:
-      - .:/app
+      - static_data:/app/staticfiles
       - media_data:/app/media
-    ports:
-      - "8000:8000"
+    expose:
+      - "8000"
     env_file:
       - .env
-    environment:
-      DATABASE_URL: postgres://crm_user:crm_password@db:5432/realestate_crm
-      REDIS_URL: redis://redis:6379/0
     depends_on:
       db:
         condition: service_healthy
@@ -79,14 +70,11 @@ services:
       context: .
       dockerfile: Dockerfile
     restart: unless-stopped
-    command: celery -A config worker -l info -c 4
+    command: celery -A config worker -l info -c 1
     volumes:
-      - .:/app
+      - media_data:/app/media
     env_file:
       - .env
-    environment:
-      DATABASE_URL: postgres://crm_user:crm_password@db:5432/realestate_crm
-      REDIS_URL: redis://redis:6379/0
     depends_on:
       - db
       - redis
@@ -97,18 +85,45 @@ services:
       dockerfile: Dockerfile
     restart: unless-stopped
     command: celery -A config beat -l info --scheduler django_celery_beat.schedulers:DatabaseScheduler
-    volumes:
-      - .:/app
     env_file:
       - .env
-    environment:
-      DATABASE_URL: postgres://crm_user:crm_password@db:5432/realestate_crm
-      REDIS_URL: redis://redis:6379/0
     depends_on:
       - db
       - redis
+
+  nginx:
+    image: nginx:alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/conf.d:/etc/nginx/conf.d
+      - static_data:/app/staticfiles
+      - media_data:/app/media
+      - certbot_certs:/etc/letsencrypt
+      - certbot_www:/var/www/certbot
+    depends_on:
+      - web
+
+  certbot:
+    image: certbot/certbot
+    restart: unless-stopped
+    volumes:
+      - certbot_certs:/etc/letsencrypt
+      - certbot_www:/var/www/certbot
+      - /var/run/docker.sock:/var/run/docker.sock
+    entrypoint: >
+      /bin/sh -c "
+      while :; do
+        certbot renew --deploy-hook 'wget -qO- http://nginx:80/health-reload 2>/dev/null || true';
+        sleep 12h;
+      done"
 
 volumes:
   postgres_data:
   minio_data:
   media_data:
+  static_data:
+  certbot_certs:
+  certbot_www:

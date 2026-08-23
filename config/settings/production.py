@@ -8,6 +8,8 @@ import sentry_sdk
 
 DEBUG = False
 
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
 # Безопасность HTTPS
 SECURE_SSL_REDIRECT = True
 SECURE_HSTS_SECONDS = 31536000          # 1 год

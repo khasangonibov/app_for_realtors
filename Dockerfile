@@ -22,7 +22,3 @@ EXPOSE 8000
 
 CMD ["gunicorn", "config.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "3"]
 
-# RUN apk update && \
-#     apk add --no-cache tzdata && \
-#     apk add --no-cache locales && \
-#     localedef -i en_US -f UTF-8 en_US.UTF-8

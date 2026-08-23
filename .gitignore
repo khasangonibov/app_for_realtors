@@ -21,3 +21,15 @@ env/
 *.log
 # Ошибочно созданный каталог (кавычки в пути)
 ~/
+
+# Runtime data
+media/
+staticfiles/
+
+# Docker / production
+*.bak
+nginx/conf.d/*.backup
+
+# SSL certificates
+letsencrypt/
+certbot/

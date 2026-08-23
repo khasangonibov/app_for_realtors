@@ -130,11 +130,11 @@ TEMPLATES = [
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'realestate_crm',
-        'USER': 'crm_user',
-        'PASSWORD': 'crm_password',
-        'HOST': 'appforrealtors-db-1',  
-        'PORT': '5432',
+        'NAME': env('POSTGRES_DB', default='realestate_crm'),
+        'USER': env('POSTGRES_USER', default='crm_user'),
+        'PASSWORD': env('POSTGRES_PASSWORD'),
+        'HOST': env('POSTGRES_HOST', default='db'),
+        'PORT': env('POSTGRES_PORT', default='5432'),
     }
 }
 
