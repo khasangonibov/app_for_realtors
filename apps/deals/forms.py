@@ -75,18 +75,25 @@ class DealForm(forms.ModelForm):
                 
 class DealFilterForm(forms.Form):
     """Форма фильтрации сделок на kanban-доске."""
+
     stage = forms.ChoiceField(
         label='Стадия',
         choices=[('', 'Все стадии')] + list(Deal.Stage.choices),
         required=False,
-        widget=forms.Select(attrs={'class': 'form-select form-select-sm'}),
+        widget=forms.Select(attrs={
+            'class': 'form-select form-select-sm',
+        }),
     )
+
     agent = forms.ModelChoiceField(
         label='Риелтор',
         queryset=User.objects.none(),
         required=False,
-        widget=forms.Select(attrs={'class': 'form-select form-select-sm select2'}),
+        widget=forms.Select(attrs={
+            'class': 'form-select form-select-sm',
+        }),
     )
+
     search = forms.CharField(
         label='Поиск',
         required=False,
@@ -98,8 +105,11 @@ class DealFilterForm(forms.Form):
 
     def __init__(self, *args, agency=None, **kwargs):
         super().__init__(*args, **kwargs)
+
         if agency:
             self.fields['agent'].queryset = User.objects.filter(
-                agency=agency, is_active=True,
+                agency=agency,
+                is_active=True,
             )
+
         self.fields['agent'].empty_label = 'Все риелторы'

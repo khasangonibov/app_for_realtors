@@ -5,20 +5,15 @@ from django.db.models import Q as models_Q
 
 def agency_context(request):
     """Добавляет переменную `agency` в контекст шаблона.
-
-    Если пользователь авторизован и у него есть agency — отдаём его.
-    Если нет (например, анонимный пользователь на публичной странице) —
-    отдаём None, и в шаблоне можно проверить через {% if agency %}.
     """
-    agency = None
+    from .models import Agency
+
+    agency = Agency.get_solo()  # всегда одно и то же, для всех
     overdue_tasks_count = 0
     unread_chats_count = 0
     unread_internal_count = 0
 
-    if request.user.is_authenticated and hasattr(request.user, 'agency'):
-        agency = request.user.agency
-
-        if agency and request.user.role != 'client':
+    if request.user.is_authenticated and agency and request.user.role != 'client':
             from apps.tasks.models import Task
             overdue_tasks_count = Task.objects.filter(
                 agency=agency,

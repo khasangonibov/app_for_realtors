@@ -146,15 +146,33 @@ def _check_manager_access(user):
 @crm_required
 @manager_required
 def users_list(request):
-    """Список сотрудников агентства — без клиентов, только штат."""
+    """Список сотрудников — с фильтром по роли и сортировкой."""
     users = User.objects.filter(
         agency=request.user.agency,
     ).exclude(
         profile__role=UserProfile.Role.CLIENT,
-    ).select_related('profile').order_by('last_name', 'first_name')
+    ).select_related('profile')
+
+    role = request.GET.get('role', '')
+    if role:
+        users = users.filter(profile__role=role)
+
+    sort = request.GET.get('sort', 'name')
+    sort_map = {
+        'name': ['last_name', 'first_name'],
+        'role': ['profile__role', 'last_name'],
+        'status': ['-is_active', 'last_name'],
+    }
+    users = users.order_by(*sort_map.get(sort, sort_map['name']))
 
     return render(request, 'accounts/users_list.html', {
         'users': users,
+        'current_role': role,
+        'current_sort': sort,
+        'role_choices': [
+            (v, l) for v, l in UserProfile.Role.choices
+            if v != UserProfile.Role.CLIENT
+        ],
     })
 
 @crm_required

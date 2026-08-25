@@ -98,13 +98,13 @@
     <nav class="public-navbar">
         <div class="container-fluid px-4 d-flex justify-content-between align-items-center">
             <a href="{% url 'public:catalog' %}" class="brand d-flex align-items-center gap-2">
-                {% if agency and agency.logo %}
+                {% if agency.logo %}
                 <img src="{{ agency.logo.url }}"
                     height="36"
                     style="border-radius: 6px; object-fit: contain;"
                     alt="{{ agency.name }}">
                 {% endif %}
-                {% if agency %}{{ agency.name }}{% else %}NalchikHome{% endif %}
+                {% if agency %}{{ agency.name }}{% else %}Тестовое агенстство{% endif %}
             </a>
             <div class="d-flex align-items-center gap-3">
                 {% if request.resolver_match.url_name == 'property_detail' or request.resolver_match.url_name == 'compare' %}
@@ -182,7 +182,7 @@
             <div class="row">
                 <div class="col-md-6">
                     <div class="fw-bold text-white mb-2">
-                        {% if agency %}{{ agency.name }}{% else %}Агентство недвижимости{% endif %}
+                        {% if agency %}{{ agency.name }}{% else %}Тестовое агентство{% endif %}
                     </div>
                     {% if agency %}
                     <div class="small">{{ agency.city }}</div>

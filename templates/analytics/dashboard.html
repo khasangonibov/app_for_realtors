@@ -160,23 +160,26 @@
                             </thead>
                             <tbody>
                                 {% for prop in top_properties %}
-                                <tr>
-                                    <td class="text-muted">{{ forloop.counter }}</td>
-                                    <td>
-                                        {{ prop.get_property_type_display }}
-                                        {% if prop.area_total %}{{ prop.area_total }} м²{% endif %}
-                                    </td>
-                                    <td class="text-muted">{{ prop.city }}</td>
-                                    <td>{{ prop.price|intcomma }} ₽</td>
-                                    <td>
-                                        <span class="badge
-                                            {% if prop.status == 'active' %}bg-success
-                                            {% elif prop.status == 'draft' %}bg-secondary
-                                            {% else %}bg-warning text-dark{% endif %}">
-                                            {{ prop.get_status_display }}
-                                        </span>
-                                    </td>
-                                    <td class="text-end fw-bold">{{ prop.views_count }}</td>
+                                <tr
+                                        onclick="window.location.href='{% url 'public:property_detail' agency_slug=prop.agency.slug pk=prop.pk token=prop.public_token %}'"
+                                        style="cursor: pointer;"
+                                    >
+                                        <td class="text-muted">{{ forloop.counter }}</td>
+                                        <td>
+                                            {{ prop.get_property_type_display }}
+                                            {% if prop.area_total %}{{ prop.area_total }} м²{% endif %}
+                                        </td>
+                                        <td class="text-muted">{{ prop.city }}</td>
+                                        <td>{{ prop.price|intcomma }} ₽</td>
+                                        <td>
+                                            <span class="badge
+                                                {% if prop.status == 'active' %}bg-success
+                                                {% elif prop.status == 'draft' %}bg-secondary
+                                                {% else %}bg-warning text-dark{% endif %}">
+                                                {{ prop.get_status_display }}
+                                            </span>
+                                        </td>
+                                        <td class="text-end fw-bold">{{ prop.views_count }}</td>
                                 </tr>
                                 {% endfor %}
                             </tbody>

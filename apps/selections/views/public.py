@@ -1,5 +1,5 @@
 from django.shortcuts import render, get_object_or_404, redirect
-from django.http import Http404
+from django.http import Http404, JsonResponse
 
 from apps.selections.models import Selection, SelectionItem
 
@@ -21,7 +21,7 @@ def selection_detail(request, token):
 
 def selection_item_react(request, token, item_pk):
     """Клиент ставит реакцию на объект в подборке.
-    Принимает только POST-запросы.
+    Поддерживает и обычный POST (fallback), и AJAX (возвращает JSON).
     """
     if request.method != 'POST':
         raise Http404
@@ -33,5 +33,9 @@ def selection_item_react(request, token, item_pk):
     if status in SelectionItem.ClientStatus.values:
         item.client_status = status
         item.save(update_fields=['client_status'])
+
+    # Если запрос пришёл через fetch — просим JSON, а не редирект
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return JsonResponse({'status': 'ok', 'client_status': item.client_status})
 
     return redirect('selection_public:detail', token=token)

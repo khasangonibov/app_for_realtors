@@ -17,8 +17,8 @@
                 {% endif %}
             </div>
             <div class="d-flex gap-2">
-                <a href="{% url 'selections:view' selection.pk %}" class="btn btn-outline-secondary btn-sm">
-                    ← К просмотру подборки
+                <a href="{% url 'selections:view' selection.pk %}" class="btn btn-outline-primary btn-sm">
+                    Сохранить изменения
                 </a>
                 {% if selection %}
                 <a href="{% url 'selections:delete' selection.pk %}" class="btn btn-outline-danger ms-auto">
@@ -294,18 +294,67 @@
             setTimeout(() => toast.remove(), 2000);
         });
     }
+</script>
+<script>
+    const SELECTION_STORAGE_KEY = 'selection_{{ selection.pk }}_pending';
 
-    // Обновляем счётчик выбранных карточек и разблокируем кнопку
-    function updateSelectedCount() {
-        const checked = document.querySelectorAll('.property-checkbox:checked').length;
-        document.getElementById('selectedCount').textContent = checked;
-        document.getElementById('addSelectedBtn').disabled = checked === 0;
+    function getPending() {
+        try {
+            return JSON.parse(localStorage.getItem(SELECTION_STORAGE_KEY)) || [];
+        } catch (e) {
+            return [];
+        }
     }
 
-    document.querySelectorAll('.property-checkbox').forEach(cb => {
-        cb.addEventListener('change', updateSelectedCount);
+    function savePending(ids) {
+        localStorage.setItem(SELECTION_STORAGE_KEY, JSON.stringify(ids));
+    }
+
+    // При загрузке страницы — отмечаем чекбоксы, которые уже выбраны ранее
+    document.addEventListener('DOMContentLoaded', function() {
+        const pending = getPending();
+        document.querySelectorAll('.property-checkbox').forEach(cb => {
+            if (pending.includes(cb.value)) {
+                cb.checked = true;
+            }
+            cb.addEventListener('change', function() {
+                let current = getPending();
+                if (cb.checked && !current.includes(cb.value)) {
+                    current.push(cb.value);
+                } else if (!cb.checked) {
+                    current = current.filter(id => id !== cb.value);
+                }
+                savePending(current);
+                updateSelectedCountFromStorage();
+            });
+        });
+        updateSelectedCountFromStorage();
     });
 
-    updateSelectedCount();
+    function updateSelectedCountFromStorage() {
+        const count = getPending().length;
+        document.getElementById('selectedCount').textContent = count;
+        document.getElementById('addSelectedBtn').disabled = count === 0;
+    }
+
+    // Перед отправкой формы — добавляем скрытые поля для всех накопленных ID,
+    // которых нет среди чекбоксов на текущей странице
+    document.getElementById('addPropertiesForm').addEventListener('submit', function() {
+        const pending = getPending();
+        const visibleIds = Array.from(document.querySelectorAll('.property-checkbox')).map(cb => cb.value);
+
+        pending.forEach(id => {
+            if (!visibleIds.includes(id)) {
+                const hidden = document.createElement('input');
+                hidden.type = 'hidden';
+                hidden.name = 'property_ids';
+                hidden.value = id;
+                this.appendChild(hidden);
+            }
+        });
+
+        // Очищаем хранилище — после отправки объекты уже добавлены
+        localStorage.removeItem(SELECTION_STORAGE_KEY);
+    });
 </script>
 {% endblock %}

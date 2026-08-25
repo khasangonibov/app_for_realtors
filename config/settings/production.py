@@ -20,7 +20,9 @@ CSRF_COOKIE_SECURE = True
 
 # Статика отдаётся через WhiteNoise (или nginx)
 STORAGES = {
-    **({} if not USE_S3 else {}),
+    'default': {
+        'BACKEND': 'django.core.files.storage.FileSystemStorage',
+    },
     'staticfiles': {
         'BACKEND': 'whitenoise.storage.CompressedManifestStaticFilesStorage',
     },
